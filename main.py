@@ -1,17 +1,17 @@
 from pathlib import Path
-from typing import Tuple
+from typing import Tuple, Dict, Union, Type
 
 from deepclustering.manager import ConfigManger
 from deepclustering.model import Model, to_Apex
 from torch.utils.data import DataLoader
 
-from ClusteringGeneralTrainer import IICMixupTrainer
+import ClusteringGeneralTrainer as trainer
 
 DATA_PATH = Path('.data')
 DATA_PATH.mkdir(exist_ok=True)
 
 
-def get_dataloader(config: dict) -> Tuple[DataLoader, DataLoader, DataLoader]:
+def get_dataloader(config: Dict[str, Union[float, int, dict]]) -> Tuple[DataLoader, DataLoader, DataLoader]:
     """
     get dataloader for IIC project
     :param config:
@@ -65,6 +65,23 @@ def get_dataloader(config: dict) -> Tuple[DataLoader, DataLoader, DataLoader]:
     return train_loader_A, train_loader_B, val_loader
 
 
+def get_trainer(config: Dict[str, Union[float, int, dict]]) -> Type[trainer.ClusteringGeneralTrainer]:
+    assert config.get('Trainer').get('name'), config.get('Trainer').get('name')
+    trainer_mapping: Dict[str, Type[trainer.ClusteringGeneralTrainer]] = {
+        'iicgeo': trainer.IICGeoTrainer,
+        'iicmixup': trainer.IICMixupTrainer,
+        'iicvat': trainer.IICVATTrainer,
+        'iicgeovat':trainer.IICGeoVATTrainer,
+        'imsatvat': trainer.IMSATVATTrainer,
+        'imsatmixup': trainer.IMSATMixupTrainer,
+        'imsatvatgeo':trainer.IMSATVATGeoTrainer,
+        'imsatvatgeomixup':trainer.IMSATVATGeoMixupTrainer
+    }
+    Trainer = trainer_mapping.get(config.get('Trainer').get('name').lower())
+    assert Trainer
+    return Trainer
+
+
 DEFAULT_CONFIG = 'config/config_MNIST.yaml'
 
 merged_config = ConfigManger(DEFAULT_CONFIG_PATH=DEFAULT_CONFIG, verbose=True, integrality_check=True).config
@@ -79,7 +96,9 @@ model = Model(
 )
 model = to_Apex(model, opt_level=None, verbosity=0)
 
-trainer = IICMixupTrainer(
+Trainer = get_trainer(merged_config)
+
+trainer = Trainer(
     model=model,
     train_loader_A=train_loader_A,
     train_loader_B=train_loader_B,

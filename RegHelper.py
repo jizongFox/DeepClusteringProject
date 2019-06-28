@@ -1,6 +1,6 @@
 from torch.distributions import Beta
 
-__all__ = ["VATModuleInterface"]
+__all__ = ["VATModuleInterface", "MixUp"]
 
 import contextlib
 from typing import Callable, Union, Dict, Tuple
@@ -10,7 +10,7 @@ import torch.nn as nn
 from deepclustering.loss.IID_losses import IIDLoss
 from deepclustering.loss.loss import KL_div
 from deepclustering.model import Model
-from deepclustering.utils import simplex, _warnings, class2one_hot
+from deepclustering.utils import simplex, _warnings
 from torch import Tensor
 
 
@@ -56,9 +56,9 @@ class VATLoss_Multihead(nn.Module):
         self.prop_eps = prop_eps
         self.only_return_img = only_return_img
 
-    def forward(self, model: Model, x: torch.Tensor) -> Tuple[Tensor, Tensor, Tensor]:
+    def forward(self, model: Model, x: torch.Tensor, **kwargs) -> Tuple[Tensor, Tensor, Tensor]:
         with torch.no_grad():
-            pred = model(x)
+            pred = model(x, **kwargs)
         assert simplex(pred[0]), f"pred should be simplex."
 
         # prepare random unit tensor
@@ -69,7 +69,7 @@ class VATLoss_Multihead(nn.Module):
             # calc adversarial direction
             for _ in range(self.ip):
                 d.requires_grad_()
-                pred_hat = model(x + self.xi * d)
+                pred_hat = model(x + self.xi * d, **kwargs)
                 # here the pred_hat is the list of simplex
                 adv_distance = list(map(lambda x, y: self.distance_func(x, y), pred_hat, pred))
                 # adv_distance = _kl_div(F.softmax(pred_hat, dim=1), pred)
@@ -83,7 +83,7 @@ class VATLoss_Multihead(nn.Module):
                 isinstance(self.eps, torch.Tensor) else d * self.eps * self.prop_eps
             if self.only_return_img:
                 return Tensor([0]), (x + r_adv).detach(), r_adv.detach()
-            pred_hat = model(x + r_adv)
+            pred_hat = model(x + r_adv, **kwargs)
             lds = list(map(lambda x, y: self.distance_func(x, y), pred_hat, pred))
             lds = sum(lds) / float(len(lds))
 
