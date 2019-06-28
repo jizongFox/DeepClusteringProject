@@ -37,10 +37,10 @@ default_svhn_img_transform = {
     "tf1":
         transforms.Compose([
             pil_augment.RandomChoice(transforms=[
-                pil_augment.RandomCrop(size=(20, 20), padding=None),
-                pil_augment.CenterCrop(size=(20, 20))
+                pil_augment.RandomCrop(size=(28, 28), padding=None),
+                pil_augment.CenterCrop(size=(28, 28))
             ]),
-            pil_augment.Resize(size=24, interpolation=PIL.Image.BILINEAR),
+            pil_augment.Resize(size=32, interpolation=PIL.Image.BILINEAR),
             transforms.ToTensor()
         ]),
     "tf2":
@@ -53,11 +53,11 @@ default_svhn_img_transform = {
                 )], p=0.5),
             pil_augment.RandomChoice(
                 transforms=[
-                    pil_augment.RandomCrop(size=(16, 16), padding=None),
                     pil_augment.RandomCrop(size=(20, 20), padding=None),
                     pil_augment.RandomCrop(size=(24, 24), padding=None),
+                    pil_augment.RandomCrop(size=(28, 28), padding=None),
                 ]),
-            pil_augment.Resize(size=24, interpolation=PIL.Image.BILINEAR),
+            pil_augment.Resize(size=32, interpolation=PIL.Image.BILINEAR),
             transforms.ColorJitter(
                 brightness=[0.6, 1.4],
                 contrast=[0.6, 1.4],
@@ -68,8 +68,8 @@ default_svhn_img_transform = {
         ]),
     "tf3":
         transforms.Compose([
-            pil_augment.CenterCrop(size=(20, 20)),
-            pil_augment.Resize(size=24, interpolation=PIL.Image.BILINEAR),
+            pil_augment.CenterCrop(size=(28, 28)),
+            pil_augment.Resize(size=32, interpolation=PIL.Image.BILINEAR),
             transforms.ToTensor()
         ]),
 

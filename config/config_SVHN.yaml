@@ -1,6 +1,6 @@
 Arch:
   name: clusternet6cTwoHead
-  input_size: 24
+  input_size: 32
   num_channel: 3
   output_k_A: 50
   output_k_B: 10
