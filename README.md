@@ -8,8 +8,8 @@ activate the env:
    
 go to the `library/deep-clustering-toolbox` to install the backend package by:   
 `cd library/deep-clustering-toolbox`   
-`pip install -e .`
-normally you will be installed a lot of packages.   
+`pip install -e .`  
+Normally you will be installed a lot of packages.   
 The installed package support mix precision training to speed up and reduce the memory usage. Following [installation guide](https://github.com/NVIDIA/apex)
 for a faster training.
 

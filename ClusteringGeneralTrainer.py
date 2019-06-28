@@ -19,8 +19,9 @@ from deepclustering.trainer import _Trainer
 from deepclustering.utils import tqdm_, simplex, tqdm, dict_filter, nice_dict
 from deepclustering.utils.classification.assignment_mapping import flat_acc, hungarian_match
 from torch import nn, Tensor
-from torch.utils.data import DataLoader
 from torch.nn import functional as F
+from torch.utils.data import DataLoader
+
 from RegHelper import VATModuleInterface, MixUp
 
 matplotlib.use('agg')
@@ -408,6 +409,7 @@ class IICTrainer(ClusteringGeneralTrainer):
         return dict_filter(report_dict)
 
     def _trainer_specific_loss(self, tf1_images: Tensor, tf2_images: Tensor, head_name: str):
+        tf1_images, tf2_images = tf1_images.to(self.device), tf2_images.to(self.device)
         tf1_pred_simplex = self.model.torchnet(tf1_images, head=head_name)
         tf2_pred_simplex = self.model.torchnet(tf2_images, head=head_name)
         assert simplex(tf1_pred_simplex[0]) and tf1_pred_simplex.__len__() == tf2_pred_simplex.__len__()
@@ -450,6 +452,7 @@ class IICMixupTrainer(IICTrainer):
 
     def _trainer_specific_loss(self, tf1_images: Tensor, tf2_images: Tensor, head_name: str):
         # just replace tf2_images with mix_up generated images
+        tf1_images = tf1_images.to(self.device)
         tf2_images, *_ = self.mixup_module(
             tf1_images,
             F.softmax(torch.randn(tf1_images.size(0), 2, device=self.device), 1),

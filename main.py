@@ -1,9 +1,14 @@
+from pathlib import Path
 from typing import Tuple
 
 from deepclustering.manager import ConfigManger
 from deepclustering.model import Model, to_Apex
-from ClusteringGeneralTrainer import IICTrainer, IMSATVATTrainer, IMSATMixupTrainer, IICVATTrainer, IICMixupTrainer
 from torch.utils.data import DataLoader
+
+from ClusteringGeneralTrainer import IICMixupTrainer
+
+DATA_PATH = Path('.data')
+DATA_PATH.mkdir(exist_ok=True)
 
 
 def get_dataloader(config: dict) -> Tuple[DataLoader, DataLoader, DataLoader]:
@@ -13,24 +18,29 @@ def get_dataloader(config: dict) -> Tuple[DataLoader, DataLoader, DataLoader]:
     :return:
     """
     if config.get('Config', DEFAULT_CONFIG).split('_')[-1].lower() == 'cifar.yaml':
-        from deepclustering.dataset import default_cifar10_img_transform as img_transforms, \
+        from dataloader import default_cifar10_img_transform as img_transforms, \
             Cifar10ClusteringDatasetInterface as DatasetInterface
         train_split_partition = ['train', 'val']
         val_split_partition = ['train', 'val']
 
     elif config.get('Config', DEFAULT_CONFIG).split('_')[-1].lower() == 'mnist.yaml':
-        from deepclustering.dataset import default_mnist_img_transform as img_transforms, \
+        from dataloader import default_mnist_img_transform as img_transforms, \
             MNISTClusteringDatasetInterface as DatasetInterface
         train_split_partition = ['train', 'val']
         val_split_partition = ['train', 'val']
     elif config.get('Config', DEFAULT_CONFIG).split('_')[-1].lower() == 'stl10.yaml':
-        from deepclustering.dataset import default_stl10_img_transform as img_transforms, \
-            STL10DatasetInterface as DatasetInterface
+        from dataloader import default_stl10_img_transform as img_transforms, \
+            STL10ClusteringDatasetInterface as DatasetInterface
         train_split_partition = ['train', 'test', 'train+unlabeled']
+        val_split_partition = ['train', 'test']
+    elif config.get('Config', DEFAULT_CONFIG).split('_')[-1].lower() == 'svhn.yaml':
+        from dataloader import default_svhn_img_transform as img_transforms, \
+            SVHNClusteringDatasetInterface as DatasetInterface
+        train_split_partition = ['train', 'test']
         val_split_partition = ['train', 'test']
     else:
         raise NotImplementedError(config.get('Config', DEFAULT_CONFIG).split('_')[-1].lower())
-    train_loader_A = DatasetInterface(split_partitions=train_split_partition,
+    train_loader_A = DatasetInterface(data_root=DATA_PATH, split_partitions=train_split_partition,
                                       **merged_config['DataLoader']).ParallelDataLoader(
         img_transforms['tf1'],
         img_transforms['tf2'],
@@ -39,7 +49,7 @@ def get_dataloader(config: dict) -> Tuple[DataLoader, DataLoader, DataLoader]:
         img_transforms['tf2'],
         img_transforms['tf2'],
     )
-    train_loader_B = DatasetInterface(split_partitions=train_split_partition,
+    train_loader_B = DatasetInterface(data_root=DATA_PATH, split_partitions=train_split_partition,
                                       **merged_config['DataLoader']).ParallelDataLoader(
         img_transforms['tf1'],
         img_transforms['tf2'],
@@ -48,14 +58,14 @@ def get_dataloader(config: dict) -> Tuple[DataLoader, DataLoader, DataLoader]:
         img_transforms['tf2'],
         img_transforms['tf2'],
     )
-    val_loader = DatasetInterface(split_partitions=val_split_partition,
+    val_loader = DatasetInterface(data_root=DATA_PATH, split_partitions=val_split_partition,
                                   **merged_config['DataLoader']).ParallelDataLoader(
         img_transforms['tf3'],
     )
     return train_loader_A, train_loader_B, val_loader
 
 
-DEFAULT_CONFIG = 'config/IIC_Basics_MNIST.yaml'
+DEFAULT_CONFIG = 'config/config_MNIST.yaml'
 
 merged_config = ConfigManger(DEFAULT_CONFIG_PATH=DEFAULT_CONFIG, verbose=True, integrality_check=True).config
 
