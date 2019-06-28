@@ -157,9 +157,8 @@ class ClusteringGeneralTrainer(_Trainer):
                 # time_before = time.time()
                 for batch, image_labels in enumerate(train_loader_):
                     images, *_ = list(zip(*image_labels))
-                    tf1_images = torch.cat(tuple([images[0] for _ in range(images.__len__() - 1)]), dim=0).to(
-                        self.device)
-                    tf2_images = torch.cat(tuple(images[1:]), dim=0).to(self.device)
+                    tf1_images = torch.cat(tuple([images[0] for _ in range(images.__len__() - 1)]), dim=0)
+                    tf2_images = torch.cat(tuple(images[1:]), dim=0)
                     if self.use_sobel:
                         tf1_images = self.sobel(tf1_images)
                         tf2_images = self.sobel(tf2_images)
@@ -244,6 +243,7 @@ class IMSATAbstractTrainer(ClusteringGeneralTrainer):
     self.criterion = MI
     self.distance = KL
     without implement Reg
+    In IMSAT, the loss usually only takes the basic transformed image tf1 without touching tf2
     """
 
     def __init__(
@@ -278,9 +278,11 @@ class IMSATAbstractTrainer(ClusteringGeneralTrainer):
 
     def _trainer_specific_loss(self, tf1_images: Tensor, tf2_images: Tensor, head_name: str) -> Tensor:
         assert head_name == 'B', "Only head B is supported in IMSAT, try to set head_control_parameter as {`B`:1}"
+        # only tf1_images are needed
+        tf1_images = tf1_images.to(self.device)
         tf1_pred_simplex = self.model.torchnet(tf1_images, head=head_name)
-        tf2_pred_simplex = self.model.torchnet(tf2_images, head=head_name)
-        assert simplex(tf1_pred_simplex[0]) and tf1_pred_simplex.__len__() == tf2_pred_simplex.__len__()
+        # tf2_pred_simplex = self.model.torchnet(tf2_images, head=head_name)
+        # assert simplex(tf1_pred_simplex[0]) and tf1_pred_simplex.__len__() == tf2_pred_simplex.__len__()
         batch_loss: List[torch.Tensor] = []  # type: ignore
         entropies: List[torch.Tensor] = []
         centropies: List[torch.Tensor] = []
@@ -295,16 +297,16 @@ class IMSATAbstractTrainer(ClusteringGeneralTrainer):
         self.METERINTERFACE['train_mi'].add(batch_loss.item())
         self.METERINTERFACE['train_entropy'].add(entropies.item())
         self.METERINTERFACE['train_centropy'].add(centropies.item())
-        reg_loss = self._regulaze(tf1_images, tf2_images, tf1_pred_simplex, tf2_pred_simplex)
+        reg_loss = self._regulaze(tf1_images, tf2_images, tf1_pred_simplex, head_name)
         return -batch_loss + reg_loss
 
     @abstractmethod
     def _regulaze(
             self,
-            tf1_images: Tensor,
-            tf2_images: Tensor,
-            tf1_pred_simplex: List[Tensor],
-            tf2_pred_simplex: List[Tensor]
+            images: Tensor,
+            tf_images: Tensor,
+            img_pred_simplex: List[Tensor],
+            head_name: str = 'B'
     ) -> Tensor:
         raise NotImplementedError
 
@@ -340,9 +342,8 @@ class IMSATVATTrainer(IMSATAbstractTrainer):
         report_dict.update({'train_reg': self.METERINTERFACE['train_reg'].summary()['mean']})
         return dict_filter(report_dict)
 
-    def _regulaze(self, tf1_images: Tensor, tf2_images: Tensor, tf1_pred_simplex: List[Tensor],
-                  tf2_pred_simplex: List[Tensor]) -> Tensor:
-        reg_loss, *_ = self.reg_module(self.model.torchnet, tf1_images)
+    def _regulaze(self, images: Tensor, tf_images: Tensor, img_pred_simplex: List[Tensor], head_name='B') -> Tensor:
+        reg_loss, *_ = self.reg_module(lambda x: self.model.torchnet(x, head=head_name), images)
         self.METERINTERFACE['train_reg'].add(reg_loss.item())
         return reg_loss
 
@@ -364,11 +365,13 @@ class IMSATMixupTrainer(IMSATVATTrainer):
         # override the regularzation module
         self.reg_module = MixUp(device=self.device, num_classes=self.model.arch_dict['output_k_B'])
 
-    def _regulaze(self, tf1_images, tf2_images, tf1_pred_simplex, tf2_pred_simplex) -> Tensor:
-        assert len(tf1_pred_simplex) == len(tf2_pred_simplex)
+    def _regulaze(self, images: Tensor, tf_images: Tensor, img_pred_simplex: List[Tensor], head_name='B') -> Tensor:
+        # here just use the tf1_image to mixup
+        # nothing with tf2_images
+        assert len(images) == len(img_pred_simplex[0])
         reg_losses: List[Tensor] = []
-        for subhead, (tf1_pred, tf2_pred) in enumerate(zip(tf1_pred_simplex, tf2_pred_simplex)):
-            mixup_img, mixup_label, mixup_index = self.reg_module(tf1_images, tf1_pred, tf1_images.flip(0),
+        for subhead, tf1_pred in enumerate(img_pred_simplex):
+            mixup_img, mixup_label, mixup_index = self.reg_module(images, tf1_pred, images.flip(0),
                                                                   tf1_pred.flip(0))
             subhead_loss = self.kl_div(self.model(mixup_img)[subhead], mixup_label)
             reg_losses.append(subhead_loss)
@@ -429,6 +432,7 @@ class IICVATTrainer(IICTrainer):
         self.VAT_module = VATModuleInterface({**VAT_params, **{'only_return_img': True}})
 
     def _trainer_specific_loss(self, tf1_images: Tensor, tf2_images: Tensor, head_name: str):
+        # just replace the tf2_image with VAT generated images
         _, tf2_images, _ = self.VAT_module(self.model.torchnet, tf1_images)
         batch_loss = super()._trainer_specific_loss(tf1_images, tf2_images, head_name)
         return batch_loss
@@ -445,6 +449,7 @@ class IICMixupTrainer(IICTrainer):
         self.mixup_module = MixUp(device=self.device, num_classes=self.model.arch_dict['output_k_B'])
 
     def _trainer_specific_loss(self, tf1_images: Tensor, tf2_images: Tensor, head_name: str):
+        # just replace tf2_images with mix_up generated images
         tf2_images, *_ = self.mixup_module(
             tf1_images,
             F.softmax(torch.randn(tf1_images.size(0), 2, device=self.device), 1),
