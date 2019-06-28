@@ -71,11 +71,11 @@ def get_trainer(config: Dict[str, Union[float, int, dict]]) -> Type[trainer.Clus
         'iicgeo': trainer.IICGeoTrainer,
         'iicmixup': trainer.IICMixupTrainer,
         'iicvat': trainer.IICVATTrainer,
-        'iicgeovat':trainer.IICGeoVATTrainer,
+        'iicgeovat': trainer.IICGeoVATTrainer,
         'imsatvat': trainer.IMSATVATTrainer,
         'imsatmixup': trainer.IMSATMixupTrainer,
-        'imsatvatgeo':trainer.IMSATVATGeoTrainer,
-        'imsatvatgeomixup':trainer.IMSATVATGeoMixupTrainer
+        'imsatvatgeo': trainer.IMSATVATGeoTrainer,
+        'imsatvatgeomixup': trainer.IMSATVATGeoMixupTrainer
     }
     Trainer = trainer_mapping.get(config.get('Trainer').get('name').lower())
     assert Trainer

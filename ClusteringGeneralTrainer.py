@@ -527,7 +527,7 @@ class IICGeoVATTrainer(IICVATTrainer):
     def __init__(self, model: Model, train_loader_A: DataLoader, train_loader_B: DataLoader, val_loader: DataLoader,
                  max_epoch: int = 100, save_dir: str = 'IICTrainer', checkpoint_path: str = None, device='cpu',
                  head_control_params: Dict[str, int] = {"B": 1}, use_sobel: bool = False, config: dict = None,
-                 VAT_params: Dict[str, Union[int, float, str]] = {"name": 'mi'}, **kwargs) -> None:
+                 VAT_params: Dict[str, Union[int, float, str]] = {"name": 'kl'}, **kwargs) -> None:
         super().__init__(model, train_loader_A, train_loader_B, val_loader, max_epoch, save_dir, checkpoint_path,
                          device, head_control_params, use_sobel, config, VAT_params, **kwargs)
 

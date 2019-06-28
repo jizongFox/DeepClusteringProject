@@ -23,7 +23,7 @@ DataLoader:
 
 Trainer:
   name: iic
-  max_epoch: 1000
+  max_epoch: 3
   save_dir: multihead_mnist
   device: cuda
   head_control_params:
