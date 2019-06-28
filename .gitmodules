@@ -1,0 +1,3 @@
+[submodule "library/deep-clustering-toolbox"]
+	path = library/deep-clustering-toolbox
+	url = https://github.com/jizongFox/deep-clustering-toolbox.git
