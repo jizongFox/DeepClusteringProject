@@ -78,7 +78,7 @@ def get_trainer(config: Dict[str, Union[float, int, dict]]) -> Type[trainer.Clus
         'imsatvatgeomixup': trainer.IMSATVATGeoMixupTrainer
     }
     Trainer = trainer_mapping.get(config.get('Trainer').get('name').lower())
-    assert Trainer
+    assert Trainer, config.get('Trainer').get('name')
     return Trainer
 
 

@@ -29,7 +29,7 @@ matplotlib.use('agg')
 
 class ClusteringGeneralTrainer(_Trainer):
     RUN_PATH = str(Path(__file__).parent / 'runs')
-    ARCHIVE_PATH = str(Path(__file__) / 'archives')
+    ARCHIVE_PATH = str(Path(__file__).parent / 'archives')
 
     def __init__(
             self,
