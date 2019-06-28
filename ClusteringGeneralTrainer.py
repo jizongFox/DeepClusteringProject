@@ -109,9 +109,9 @@ class ClusteringGeneralTrainer(_Trainer):
             # save meters and checkpoints
             SUMMARY = self.METERINTERFACE.summary()
             SUMMARY.to_csv(self.save_dir / f'wholeMeter.csv')
-            self.writer.add_scalars('Scalars', SUMMARY.iloc[-1].to_dict(), global_step=epoch)
             self.drawer.draw(SUMMARY)
             self.save_checkpoint(self.state_dict, epoch, current_score)
+        self.writer.close()
 
     def _train_loop(
             self,
@@ -160,8 +160,9 @@ class ClusteringGeneralTrainer(_Trainer):
                 # time_before = time.time()
                 for batch, image_labels in enumerate(train_loader_):
                     images, *_ = list(zip(*image_labels))
-                    tf1_images = torch.cat(tuple([images[0] for _ in range(images.__len__() - 1)]), dim=0)
-                    tf2_images = torch.cat(tuple(images[1:]), dim=0)
+                    tf1_images = torch.cat(tuple([images[0] for _ in range(images.__len__() - 1)]), dim=0).to(
+                        self.device)
+                    tf2_images = torch.cat(tuple(images[1:]), dim=0).to(self.device)
                     if self.use_sobel:
                         tf1_images = self.sobel(tf1_images)
                         tf2_images = self.sobel(tf2_images)
@@ -173,7 +174,7 @@ class ClusteringGeneralTrainer(_Trainer):
                         loss.backward()
                     report_dict = self._training_report_dict
                     train_loader_.set_postfix(report_dict)
-
+        self.writer.add_scalar_with_tag('train', report_dict, epoch)
         print(f"Training epoch: {epoch} : {nice_dict(report_dict)}")
 
     def _eval_loop(
@@ -234,6 +235,8 @@ class ClusteringGeneralTrainer(_Trainer):
         self.METERINTERFACE.val_worst_acc.add(min(subhead_accs))
         report_dict = self._eval_report_dict
         print(f"Validating epoch: {epoch} : {nice_dict(report_dict)}")
+        self.writer.add_scalar_with_tag('val', report_dict, epoch)
+
         return self.METERINTERFACE.val_best_acc.summary()['mean']
 
     def _trainer_specific_loss(self, tf1_images: Tensor, tf2_images: Tensor, head_name: str):
