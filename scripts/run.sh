@@ -22,6 +22,16 @@ declare -a StringArray=(
 "python -O main.py Config=config/config_MNIST.yaml Trainer.name=imsat Trainer.save_dir=mnist_3/imsat Trainer.max_epoch=100" \
 "python -O main.py Config=config/config_MNIST.yaml Trainer.name=imsat Trainer.save_dir=mnist_4/imsat Trainer.max_epoch=100" \
 "python -O main.py Config=config/config_MNIST.yaml Trainer.name=imsat Trainer.save_dir=mnist_5/imsat Trainer.max_epoch=100" \
+"python -O main.py Config=config/config_MNIST.yaml Trainer.name=imsatvat Trainer.save_dir=mnist_1/imsatvat_0.25 Trainer.max_epoch=100 Trainer.VAT_params='{name:kl, eps=0.25}'" \
+"python -O main.py Config=config/config_MNIST.yaml Trainer.name=imsatvat Trainer.save_dir=mnist_2/imsatvat_0.25 Trainer.max_epoch=100 Trainer.VAT_params='{name:kl, eps=0.25}'" \
+"python -O main.py Config=config/config_MNIST.yaml Trainer.name=imsatvat Trainer.save_dir=mnist_3/imsatvat_0.25 Trainer.max_epoch=100 Trainer.VAT_params='{name:kl, eps=0.25}'" \
+"python -O main.py Config=config/config_MNIST.yaml Trainer.name=imsatvat Trainer.save_dir=mnist_4/imsatvat_0.25 Trainer.max_epoch=100 Trainer.VAT_params='{name:kl, eps=0.25}'" \
+"python -O main.py Config=config/config_MNIST.yaml Trainer.name=imsatvat Trainer.save_dir=mnist_5/imsatvat_0.25 Trainer.max_epoch=100 Trainer.VAT_params='{name:kl, eps=0.25}'" \
+"python -O main.py Config=config/config_MNIST.yaml Trainer.name=imsatvat Trainer.save_dir=mnist_1/imsatvat_1.0 Trainer.max_epoch=100 Trainer.VAT_params='{name:kl, eps=1.0}'" \
+"python -O main.py Config=config/config_MNIST.yaml Trainer.name=imsatvat Trainer.save_dir=mnist_2/imsatvat_1.0 Trainer.max_epoch=100 Trainer.VAT_params='{name:kl, eps=1.0}'" \
+"python -O main.py Config=config/config_MNIST.yaml Trainer.name=imsatvat Trainer.save_dir=mnist_3/imsatvat_1.0 Trainer.max_epoch=100 Trainer.VAT_params='{name:kl, eps=1.0}'" \
+"python -O main.py Config=config/config_MNIST.yaml Trainer.name=imsatvat Trainer.save_dir=mnist_4/imsatvat_1.0 Trainer.max_epoch=100 Trainer.VAT_params='{name:kl, eps=1.0}'" \
+"python -O main.py Config=config/config_MNIST.yaml Trainer.name=imsatvat Trainer.save_dir=mnist_5/imsatvat_1.0 Trainer.max_epoch=100 Trainer.VAT_params='{name:kl, eps=1.0}'" \
 "python -O main.py Config=config/config_MNIST.yaml Trainer.name=imsatvat Trainer.save_dir=mnist_1/imsatvat_2.5 Trainer.max_epoch=100 Trainer.VAT_params='{name:kl, eps=2.5}'" \
 "python -O main.py Config=config/config_MNIST.yaml Trainer.name=imsatvat Trainer.save_dir=mnist_2/imsatvat_2.5 Trainer.max_epoch=100 Trainer.VAT_params='{name:kl, eps=2.5}'" \
 "python -O main.py Config=config/config_MNIST.yaml Trainer.name=imsatvat Trainer.save_dir=mnist_3/imsatvat_2.5 Trainer.max_epoch=100 Trainer.VAT_params='{name:kl, eps=2.5}'" \
@@ -46,6 +56,7 @@ declare -a StringArray=(
 #
 for cmd in "${StringArray[@]}"
 do
-#wrapper "${time}" "${cmd}"
-${cmd}
+echo ${cmd}
+wrapper "${time}" "${cmd}"
+#${cmd}
 done

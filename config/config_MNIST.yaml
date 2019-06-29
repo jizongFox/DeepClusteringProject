@@ -4,7 +4,7 @@ Arch:
   num_channel: 1
   output_k_A: 50
   output_k_B: 10
-  num_sub_heads: 3
+  num_sub_heads: 1
   semisup: False
 
 Optim:
