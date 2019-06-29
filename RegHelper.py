@@ -109,7 +109,7 @@ class VATLoss_Multihead(nn.Module):
                 else d * self.eps * self.prop_eps
             )
             if self.only_return_img:
-                return Tensor([0]), (x + r_adv).detach(), r_adv.detach()
+                return Tensor([0]).to(x.device), (x + r_adv).detach(), r_adv.detach()
             pred_hat = model(x + r_adv, **kwargs)
             lds = list(map(lambda x, y: self.distance_func(x, y), pred_hat, pred))
             lds = sum(lds) / float(len(lds))
