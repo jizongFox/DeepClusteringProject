@@ -16,15 +16,15 @@ class SemiDatasetInterface(object):
     """
 
     def __init__(
-        self,
-        DataClass: Dataset,
-        data_root: str,
-        labeled_sample_num: int,
-        img_transformation: Callable = None,
-        target_transformation: Callable = None,
-        verbose: bool = True,
-        *args,
-        **kwargs,
+            self,
+            DataClass: Dataset,
+            data_root: str,
+            labeled_sample_num: int,
+            img_transformation: Callable = None,
+            target_transformation: Callable = None,
+            verbose: bool = True,
+            *args,
+            **kwargs,
     ) -> None:
         super().__init__()
         _warnings(args, kwargs)
@@ -37,8 +37,8 @@ class SemiDatasetInterface(object):
 
     @abstractmethod
     def _init_train_and_test_test(
-        self, transform, target_transform, *args, **kwargs
-    ) -> Tuple[Dataset, Dataset]:
+            self, transform, target_transform, *args, **kwargs
+    ) -> Tuple[Dataset, Dataset]:  # type:ignore
         """
         This method initialize the train set and validation set
         :return:
@@ -46,13 +46,13 @@ class SemiDatasetInterface(object):
         _warnings(args, kwargs)
 
     def SemiSupervisedDataLoaders(
-        self,
-        batch_size=4,
-        shuffle=True,
-        drop_last=False,
-        num_workers=1,
-        *args,
-        **kwargs,
+            self,
+            batch_size=4,
+            shuffle=True,
+            drop_last=False,
+            num_workers=1,
+            *args,
+            **kwargs,
     ) -> Tuple[DataLoader, DataLoader, DataLoader]:
         _warnings(args, kwargs)
         train_set, val_set = self._init_train_and_test_test(
@@ -91,15 +91,15 @@ class SemiDatasetInterface(object):
         )
 
         assert (
-            labeled_loader.dataset.__len__() + unlabeled_loader.dataset.__len__()
-            == train_set.__len__()
+                labeled_loader.dataset.__len__() + unlabeled_loader.dataset.__len__()
+                == train_set.__len__()
         )
 
         return labeled_loader, unlabeled_loader, val_loader
 
     @staticmethod
     def _draw_indices(
-        dataset: Dataset, labeled_sample_num: int, verbose: bool = True
+            dataset: Dataset, labeled_sample_num: int, verbose: bool = True
     ) -> Tuple[List[int], List[int]]:
         total_num = len(dataset)
         labeled_indices = sorted(

@@ -1,3 +1,5 @@
+from pprint import pprint
+
 from torch.distributions import Beta
 
 __all__ = ["VATModuleInterface", "MixUp"]
@@ -10,7 +12,7 @@ import torch.nn as nn
 from deepclustering.loss.IID_losses import IIDLoss
 from deepclustering.loss.loss import KL_div
 from deepclustering.model import Model
-from deepclustering.utils import simplex, _warnings
+from deepclustering.utils import simplex, _warnings, nice_dict
 from torch import Tensor
 
 
@@ -44,15 +46,16 @@ class VATLoss_Multihead(nn.Module):
     """
 
     def __init__(
-        self,
-        distance_func: Callable = KL_div(reduce=True),
-        xi=0.01,
-        eps=1.0,
-        prop_eps=0.25,
-        ip=1,
-        *args,
-        only_return_img: bool = False,
-        **kwargs,
+            self,
+            distance_func: Callable = KL_div(reduce=True),
+            xi=1e-6,
+            eps=2.5,
+            prop_eps=1,
+            ip=1,
+            only_return_img: bool = False,
+            verbose: bool = True,
+            *args,
+            **kwargs
     ):
         """VAT loss
         :param xi: hyperparameter of VAT (default: 10.0)
@@ -67,9 +70,12 @@ class VATLoss_Multihead(nn.Module):
         self.ip = ip
         self.prop_eps = prop_eps
         self.only_return_img = only_return_img
+        if verbose:
+            pprint(f"Initialize the VAT with "
+                   f"{nice_dict({k: v for k, v in self.__dict__.items() if type(v) in (str, int, float)})}")
 
     def forward(
-        self, model: Model, x: torch.Tensor, **kwargs
+            self, model: Model, x: torch.Tensor, **kwargs
     ) -> Tuple[Tensor, Tensor, Tensor]:
         with torch.no_grad():
             pred = model(x, **kwargs)
@@ -111,7 +117,7 @@ class VATLoss_Multihead(nn.Module):
         return lds, (x + r_adv).detach(), r_adv.detach()
 
 
-def VATModuleInterface(params: Dict[str, Union[str, int, float]]):
+def VATModuleInterface(params: Dict[str, Union[str, int, float]], verbose: bool = True):
     loss_name = params["name"]
     assert loss_name in ("kl", "mi")
     iid_loss = lambda x, y: IIDLoss()(x, y)[0]
@@ -119,7 +125,7 @@ def VATModuleInterface(params: Dict[str, Union[str, int, float]]):
     loss_func = KL_div(reduce=True) if loss_name == "kl" else iid_loss
 
     return VATLoss_Multihead(
-        distance_func=loss_func, **{k: v for k, v in params.items() if k != "name"}
+        distance_func=loss_func, verbose=verbose, **{k: v for k, v in params.items() if k != "name"}
     )
 
 

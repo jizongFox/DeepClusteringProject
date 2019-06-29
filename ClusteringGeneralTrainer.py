@@ -1,7 +1,6 @@
 """
 This is the trainer general clustering trainer
 """
-from abc import abstractmethod
 from collections import OrderedDict
 from pathlib import Path
 from typing import List, Union, Dict, Any
@@ -16,7 +15,7 @@ from deepclustering.loss.loss import KL_div
 from deepclustering.meters import AverageValueMeter, MeterInterface
 from deepclustering.model import Model, ZeroGradientBackwardStep
 from deepclustering.trainer import _Trainer
-from deepclustering.utils import tqdm_, simplex, tqdm, dict_filter, nice_dict
+from deepclustering.utils import tqdm_, simplex, tqdm, dict_filter, nice_dict, assert_list
 from deepclustering.utils.classification.assignment_mapping import (
     flat_acc,
     hungarian_match,
@@ -35,20 +34,20 @@ class ClusteringGeneralTrainer(_Trainer):
     ARCHIVE_PATH = str(Path(__file__).parent / "archives")
 
     def __init__(
-        self,
-        model: Model,
-        train_loader_A: DataLoader,
-        train_loader_B: DataLoader,
-        val_loader: DataLoader,
-        criterion: nn.Module = None,
-        max_epoch: int = 100,
-        save_dir: str = "ClusteringGeneralTrainer",
-        checkpoint_path: str = None,
-        device="cpu",
-        head_control_params: Dict[str, int] = {"B": 1},
-        use_sobel: bool = False,
-        config: dict = None,
-        **kwargs,
+            self,
+            model: Model,
+            train_loader_A: DataLoader,
+            train_loader_B: DataLoader,
+            val_loader: DataLoader,
+            criterion: nn.Module = None,
+            max_epoch: int = 100,
+            save_dir: str = "ClusteringGeneralTrainer",
+            checkpoint_path: str = None,
+            device="cpu",
+            head_control_params: Dict[str, int] = {"B": 1},
+            use_sobel: bool = False,
+            config: dict = None,
+            **kwargs,
     ) -> None:
         super().__init__(
             model,
@@ -62,7 +61,7 @@ class ClusteringGeneralTrainer(_Trainer):
             **kwargs,
         )  # type: ignore
         assert (
-            self.train_loader is None
+                self.train_loader is None
         ), self.train_loader  # discard the original self.train_loader
         self.train_loader_A = train_loader_A
         self.train_loader_B = train_loader_B
@@ -122,14 +121,14 @@ class ClusteringGeneralTrainer(_Trainer):
         self.writer.close()
 
     def _train_loop(
-        self,
-        train_loader_A: DataLoader = None,
-        train_loader_B: DataLoader = None,
-        epoch: int = None,
-        mode: ModelMode = ModelMode.TRAIN,
-        head_control_param: OrderedDict = None,
-        *args,
-        **kwargs,
+            self,
+            train_loader_A: DataLoader = None,
+            train_loader_B: DataLoader = None,
+            epoch: int = None,
+            mode: ModelMode = ModelMode.TRAIN,
+            head_control_param: OrderedDict = None,
+            *args,
+            **kwargs,
     ) -> None:
         """
         :param train_loader_A:
@@ -145,7 +144,7 @@ class ClusteringGeneralTrainer(_Trainer):
             train_loader_A, DataLoader
         )
         assert (
-            head_control_param and head_control_param.__len__() > 0
+                head_control_param and head_control_param.__len__() > 0
         ), f"`head_control_param` must be provided, given {head_control_param}."
         assert set(head_control_param.keys()) <= {
             "A",
@@ -204,12 +203,12 @@ class ClusteringGeneralTrainer(_Trainer):
         print(f"Training epoch: {epoch} : {nice_dict(report_dict)}")
 
     def _eval_loop(
-        self,
-        val_loader: DataLoader = None,
-        epoch: int = 0,
-        mode: ModelMode = ModelMode.EVAL,
-        *args,
-        **kwargs,
+            self,
+            val_loader: DataLoader = None,
+            epoch: int = 0,
+            mode: ModelMode = ModelMode.EVAL,
+            *args,
+            **kwargs,
     ) -> float:
         assert isinstance(val_loader, DataLoader)
         self.model.set_mode(mode)
@@ -266,7 +265,7 @@ class ClusteringGeneralTrainer(_Trainer):
         return self.METERINTERFACE.val_best_acc.summary()["mean"]
 
     def _trainer_specific_loss(
-        self, tf1_images: Tensor, tf2_images: Tensor, head_name: str
+            self, tf1_images: Tensor, tf2_images: Tensor, head_name: str
     ):
         raise NotImplementedError
 
@@ -281,20 +280,20 @@ class IMSATAbstractTrainer(ClusteringGeneralTrainer):
     """
 
     def __init__(
-        self,
-        model: Model,
-        train_loader_A: DataLoader,
-        train_loader_B: DataLoader,
-        val_loader: DataLoader,
-        max_epoch: int = 100,
-        save_dir: str = "IMSATAbstractTrainer",
-        checkpoint_path: str = None,
-        device="cpu",
-        head_control_params: Dict[str, int] = {"B": 1},
-        use_sobel: bool = False,
-        config: dict = None,
-        MI_dict: dict = {},
-        **kwargs,
+            self,
+            model: Model,
+            train_loader_A: DataLoader,
+            train_loader_B: DataLoader,
+            val_loader: DataLoader,
+            max_epoch: int = 100,
+            save_dir: str = "IMSATAbstractTrainer",
+            checkpoint_path: str = None,
+            device="cpu",
+            head_control_params: Dict[str, int] = {"B": 1},
+            use_sobel: bool = False,
+            config: dict = None,
+            MI_dict: dict = {},
+            **kwargs,
     ) -> None:
         super().__init__(
             model,
@@ -319,10 +318,9 @@ class IMSATAbstractTrainer(ClusteringGeneralTrainer):
         self.METERINTERFACE.register_new_meter("train_mi", AverageValueMeter())
         self.METERINTERFACE.register_new_meter("train_entropy", AverageValueMeter())
         self.METERINTERFACE.register_new_meter("train_centropy", AverageValueMeter())
-        colum_to_draw = [
-            "train_mi_mean",
-            ["train_entropy_mean", "train_centropy_mean"],
-        ] + colum_to_draw  # type: ignore
+        colum_to_draw = ["train_mi_mean",
+                         "train_entropy_mean",
+                         "train_centropy_mean"] + colum_to_draw  # type: ignore
         return colum_to_draw
 
     @property
@@ -335,10 +333,10 @@ class IMSATAbstractTrainer(ClusteringGeneralTrainer):
         return dict_filter(report_dict)
 
     def _trainer_specific_loss(
-        self, tf1_images: Tensor, tf2_images: Tensor, head_name: str
+            self, tf1_images: Tensor, tf2_images: Tensor, head_name: str
     ) -> Tensor:
         assert (
-            head_name == "B"
+                head_name == "B"
         ), "Only head B is supported in IMSAT, try to set head_control_parameter as {`B`:1}"
         # only tf1_images are needed
         tf1_images = tf1_images.to(self.device)
@@ -362,15 +360,14 @@ class IMSATAbstractTrainer(ClusteringGeneralTrainer):
         reg_loss = self._regulaze(tf1_images, tf2_images, tf1_pred_simplex, head_name)
         return -batch_loss + reg_loss
 
-    @abstractmethod
     def _regulaze(
-        self,
-        images: Tensor,
-        tf_images: Tensor,
-        img_pred_simplex: List[Tensor],
-        head_name: str = "B",
+            self,
+            images: Tensor,
+            tf_images: Tensor,
+            img_pred_simplex: List[Tensor],
+            head_name: str = "B",
     ) -> Tensor:
-        raise NotImplementedError
+        return torch.Tensor([0]).to(self.device)
 
 
 class IMSATVATTrainer(IMSATAbstractTrainer):
@@ -380,21 +377,21 @@ class IMSATVATTrainer(IMSATAbstractTrainer):
     """
 
     def __init__(
-        self,
-        model: Model,
-        train_loader_A: DataLoader,
-        train_loader_B: DataLoader,
-        val_loader: DataLoader,
-        max_epoch: int = 100,
-        save_dir: str = "IMSATVATTrainer",
-        checkpoint_path: str = None,
-        device="cpu",
-        head_control_params: Dict[str, int] = {"B": 1},
-        use_sobel: bool = False,
-        config: Dict[str, Union[int, float, str, Dict[str, Any]]] = None,
-        MI_dict: Dict[str, Union[int, float, str]] = {},
-        VAT_params: Dict[str, Union[int, float, str]] = {"name": "kl"},
-        **kwargs,
+            self,
+            model: Model,
+            train_loader_A: DataLoader,
+            train_loader_B: DataLoader,
+            val_loader: DataLoader,
+            max_epoch: int = 100,
+            save_dir: str = "IMSATVATTrainer",
+            checkpoint_path: str = None,
+            device="cpu",
+            head_control_params: Dict[str, int] = {"B": 1},
+            use_sobel: bool = False,
+            config: Dict[str, Union[int, float, str, Dict[str, Any]]] = None,
+            MI_dict: Dict[str, Union[int, float, str]] = {},
+            VAT_params: Dict[str, Union[int, float, str]] = {"name": "kl", "eps": 2.5},
+            **kwargs,
     ) -> None:
         assert VAT_params.get("name") == "kl", (
             f"In IMSAT framework, KL distance is the only to be supported, "
@@ -419,46 +416,47 @@ class IMSATVATTrainer(IMSATAbstractTrainer):
 
     def __init_meters__(self) -> List[Union[str, List[str]]]:
         colums = super().__init_meters__()
-        self.METERINTERFACE.register_new_meter("train_reg", AverageValueMeter())
-        return ["train_reg_mean"] + colums  # type: ignore
+        self.METERINTERFACE.register_new_meter("train_adv", AverageValueMeter())
+        colums.insert(-1, "train_adv_mean")
+        return colums
 
     @property
     def _training_report_dict(self):
         report_dict = super()._training_report_dict
         report_dict.update(
-            {"train_reg": self.METERINTERFACE["train_reg"].summary()["mean"]}
+            {"train_adv": self.METERINTERFACE["train_adv"].summary()["mean"]}
         )
         return dict_filter(report_dict)
 
     def _regulaze(
-        self,
-        images: Tensor,
-        tf_images: Tensor,
-        img_pred_simplex: List[Tensor],
-        head_name="B",
+            self,
+            images: Tensor,
+            tf_images: Tensor,
+            img_pred_simplex: List[Tensor],
+            head_name="B",
     ) -> Tensor:
         reg_loss, *_ = self.reg_module(self.model.torchnet, images, head=head_name)
-        self.METERINTERFACE["train_reg"].add(reg_loss.item())
+        self.METERINTERFACE["train_adv"].add(reg_loss.item())
         return reg_loss
 
 
 class IMSATVATGeoTrainer(IMSATVATTrainer):
     def __init__(
-        self,
-        model: Model,
-        train_loader_A: DataLoader,
-        train_loader_B: DataLoader,
-        val_loader: DataLoader,
-        max_epoch: int = 100,
-        save_dir: str = "IMSATVATGeoTrainer",
-        checkpoint_path: str = None,
-        device="cpu",
-        head_control_params: Dict[str, int] = {"B": 1},
-        use_sobel: bool = False,
-        config: Dict[str, Union[int, float, str, Dict[str, Any]]] = None,
-        MI_dict: Dict[str, Union[int, float, str]] = {},
-        VAT_params: Dict[str, Union[int, float, str]] = {"name": "kl"},
-        **kwargs,
+            self,
+            model: Model,
+            train_loader_A: DataLoader,
+            train_loader_B: DataLoader,
+            val_loader: DataLoader,
+            max_epoch: int = 100,
+            save_dir: str = "IMSATVATGeoTrainer",
+            checkpoint_path: str = None,
+            device="cpu",
+            head_control_params: Dict[str, int] = {"B": 1},
+            use_sobel: bool = False,
+            config: Dict[str, Union[int, float, str, Dict[str, Any]]] = None,
+            MI_dict: Dict[str, Union[int, float, str]] = {},
+            VAT_params: Dict[str, Union[int, float, str]] = {"name": "kl"},
+            **kwargs,
     ) -> None:
         super().__init__(
             model,
@@ -491,11 +489,11 @@ class IMSATVATGeoTrainer(IMSATVATTrainer):
         return dict_filter(report_dict)
 
     def _regulaze(
-        self,
-        images: Tensor,
-        tf_images: Tensor,
-        img_pred_simplex: List[Tensor],
-        head_name="B",
+            self,
+            images: Tensor,
+            tf_images: Tensor,
+            img_pred_simplex: List[Tensor],
+            head_name="B",
     ) -> Tensor:
         vat_loss = super()._regulaze(images, tf_images, img_pred_simplex, head_name)
 
@@ -507,7 +505,7 @@ class IMSATVATGeoTrainer(IMSATVATTrainer):
         # kl div:
         geo_losses: List[Tensor] = []
         for subhead, (tf1_pred, tf2_pred) in enumerate(
-            zip(img_pred_simplex, tf_pred_simplex)
+                zip(img_pred_simplex, tf_pred_simplex)
         ):
             geo_losses.append(self.kl_div(tf2_pred, tf1_pred.detach()))
         geo_losses: Tensor = sum(geo_losses) / len(geo_losses)
@@ -522,20 +520,20 @@ class IMSATMixupTrainer(IMSATVATTrainer):
     """
 
     def __init__(
-        self,
-        model: Model,
-        train_loader_A: DataLoader,
-        train_loader_B: DataLoader,
-        val_loader: DataLoader,
-        max_epoch: int = 100,
-        save_dir: str = "IMSATVATTrainer",
-        checkpoint_path: str = None,
-        device="cpu",
-        head_control_params: Dict[str, int] = {"B": 1},
-        use_sobel: bool = False,
-        config: Dict[str, Union[int, float, str, Dict[str, Any]]] = None,
-        MI_dict: Dict[str, Union[int, float, str]] = {},
-        **kwargs,
+            self,
+            model: Model,
+            train_loader_A: DataLoader,
+            train_loader_B: DataLoader,
+            val_loader: DataLoader,
+            max_epoch: int = 100,
+            save_dir: str = "IMSATVATTrainer",
+            checkpoint_path: str = None,
+            device="cpu",
+            head_control_params: Dict[str, int] = {"B": 1},
+            use_sobel: bool = False,
+            config: Dict[str, Union[int, float, str, Dict[str, Any]]] = None,
+            MI_dict: Dict[str, Union[int, float, str]] = {},
+            **kwargs,
     ) -> None:
         super().__init__(
             model,
@@ -559,11 +557,11 @@ class IMSATMixupTrainer(IMSATVATTrainer):
         )
 
     def _regulaze(
-        self,
-        images: Tensor,
-        tf_images: Tensor,
-        img_pred_simplex: List[Tensor],
-        head_name="B",
+            self,
+            images: Tensor,
+            tf_images: Tensor,
+            img_pred_simplex: List[Tensor],
+            head_name="B",
     ) -> Tensor:
         # here just use the tf1_image to mixup
         # nothing with tf2_images
@@ -582,21 +580,21 @@ class IMSATMixupTrainer(IMSATVATTrainer):
 
 class IMSATVATGeoMixupTrainer(IMSATVATGeoTrainer):
     def __init__(
-        self,
-        model: Model,
-        train_loader_A: DataLoader,
-        train_loader_B: DataLoader,
-        val_loader: DataLoader,
-        max_epoch: int = 100,
-        save_dir: str = "IMSATVATGeoMixupTrainer",
-        checkpoint_path: str = None,
-        device="cpu",
-        head_control_params: Dict[str, int] = {"B": 1},
-        use_sobel: bool = False,
-        config: Dict[str, Union[int, float, str, Dict[str, Any]]] = None,
-        MI_dict: Dict[str, Union[int, float, str]] = {},
-        VAT_params: Dict[str, Union[int, float, str]] = {"name": "kl"},
-        **kwargs,
+            self,
+            model: Model,
+            train_loader_A: DataLoader,
+            train_loader_B: DataLoader,
+            val_loader: DataLoader,
+            max_epoch: int = 100,
+            save_dir: str = "IMSATVATGeoMixupTrainer",
+            checkpoint_path: str = None,
+            device="cpu",
+            head_control_params: Dict[str, int] = {"B": 1},
+            use_sobel: bool = False,
+            config: Dict[str, Union[int, float, str, Dict[str, Any]]] = None,
+            MI_dict: Dict[str, Union[int, float, str]] = {},
+            VAT_params: Dict[str, Union[int, float, str]] = {"name": "kl"},
+            **kwargs,
     ) -> None:
         super().__init__(
             model,
@@ -633,11 +631,11 @@ class IMSATVATGeoMixupTrainer(IMSATVATGeoTrainer):
         return dict_filter(report_dict)
 
     def _regulaze(
-        self,
-        images: Tensor,
-        tf_images: Tensor,
-        img_pred_simplex: List[Tensor],
-        head_name="B",
+            self,
+            images: Tensor,
+            tf_images: Tensor,
+            img_pred_simplex: List[Tensor],
+            head_name="B",
     ) -> Tensor:
         vat_geo_loss = super()._regulaze(images, tf_images, img_pred_simplex, head_name)
         # here just use the tf1_image to mixup
@@ -661,19 +659,19 @@ class IICGeoTrainer(ClusteringGeneralTrainer):
     """
 
     def __init__(
-        self,
-        model: Model,
-        train_loader_A: DataLoader,
-        train_loader_B: DataLoader,
-        val_loader: DataLoader,
-        max_epoch: int = 100,
-        save_dir: str = "IICTrainer",
-        checkpoint_path: str = None,
-        device="cpu",
-        head_control_params: Dict[str, int] = {"B": 1},
-        use_sobel: bool = False,
-        config: dict = None,
-        **kwargs,
+            self,
+            model: Model,
+            train_loader_A: DataLoader,
+            train_loader_B: DataLoader,
+            val_loader: DataLoader,
+            max_epoch: int = 100,
+            save_dir: str = "IICTrainer",
+            checkpoint_path: str = None,
+            device="cpu",
+            head_control_params: Dict[str, int] = {"B": 1},
+            use_sobel: bool = False,
+            config: dict = None,
+            **kwargs,
     ) -> None:
         super().__init__(
             model,
@@ -696,9 +694,9 @@ class IICGeoTrainer(ClusteringGeneralTrainer):
         self.METERINTERFACE.register_new_meter("train_head_A", AverageValueMeter())
         self.METERINTERFACE.register_new_meter("train_head_B", AverageValueMeter())
         columns_to_draw = [
-            "train_head_A_mean",
-            "train_head_B_mean",
-        ] + columns_to_draw  # type:ignore
+                              "train_head_A_mean",
+                              "train_head_B_mean",
+                          ] + columns_to_draw  # type:ignore
         return columns_to_draw
 
     @property
@@ -710,15 +708,15 @@ class IICGeoTrainer(ClusteringGeneralTrainer):
         return dict_filter(report_dict)
 
     def _trainer_specific_loss(
-        self, tf1_images: Tensor, tf2_images: Tensor, head_name: str
+            self, tf1_images: Tensor, tf2_images: Tensor, head_name: str
     ):
-        tf1_images, tf2_images = tf1_images.to(self.device), tf2_images.to(self.device)
+        if self.device not in (tf1_images.device, tf2_images.device):
+            tf1_images, tf2_images = tf1_images.to(self.device), tf2_images.to(self.device)
         tf1_pred_simplex = self.model.torchnet(tf1_images, head=head_name)
         tf2_pred_simplex = self.model.torchnet(tf2_images, head=head_name)
-        assert (
-            simplex(tf1_pred_simplex[0])
-            and tf1_pred_simplex.__len__() == tf2_pred_simplex.__len__()
-        )
+        assert assert_list(simplex, tf1_pred_simplex) and assert_list(simplex, tf2_pred_simplex) and \
+               tf1_pred_simplex.__len__() == tf2_pred_simplex.__len__(), f"Error on tf1 and tf2 predictions."
+
         batch_loss: List[torch.Tensor] = []  # type: ignore
         for subhead in range(tf1_pred_simplex.__len__()):
             _loss, _loss_no_lambda = self.criterion(
@@ -726,29 +724,27 @@ class IICGeoTrainer(ClusteringGeneralTrainer):
             )
             batch_loss.append(_loss)
         batch_loss: torch.Tensor = sum(batch_loss) / len(batch_loss)  # type:ignore
-        self.METERINTERFACE[f"train_head_{head_name}"].add(
-            -batch_loss.item()
-        )  # type: ignore
+        self.METERINTERFACE[f"train_head_{head_name}"].add(-batch_loss.item())  # type: ignore
 
         return batch_loss
 
 
 class IICVATTrainer(IICGeoTrainer):
     def __init__(
-        self,
-        model: Model,
-        train_loader_A: DataLoader,
-        train_loader_B: DataLoader,
-        val_loader: DataLoader,
-        max_epoch: int = 100,
-        save_dir: str = "IICTrainer",
-        checkpoint_path: str = None,
-        device="cpu",
-        head_control_params: Dict[str, int] = {"B": 1},
-        use_sobel: bool = False,
-        config: dict = None,
-        VAT_params: Dict[str, Union[int, float, str]] = {"name": "mi"},
-        **kwargs,
+            self,
+            model: Model,
+            train_loader_A: DataLoader,
+            train_loader_B: DataLoader,
+            val_loader: DataLoader,
+            max_epoch: int = 100,
+            save_dir: str = "IICTrainer",
+            checkpoint_path: str = None,
+            device="cpu",
+            head_control_params: Dict[str, int] = {"B": 1},
+            use_sobel: bool = False,
+            config: dict = None,
+            VAT_params: Dict[str, Union[int, float, str]] = {"name": "kl"},
+            **kwargs,
     ) -> None:
         super().__init__(
             model,
@@ -769,7 +765,7 @@ class IICVATTrainer(IICGeoTrainer):
         )
 
     def _trainer_specific_loss(
-        self, tf1_images: Tensor, tf2_images: Tensor, head_name: str
+            self, tf1_images: Tensor, tf2_images: Tensor, head_name: str
     ):
         # just replace the tf2_image with VAT generated images
         tf1_images = tf1_images.to(self.device)
@@ -780,20 +776,20 @@ class IICVATTrainer(IICGeoTrainer):
 
 class IICGeoVATTrainer(IICVATTrainer):
     def __init__(
-        self,
-        model: Model,
-        train_loader_A: DataLoader,
-        train_loader_B: DataLoader,
-        val_loader: DataLoader,
-        max_epoch: int = 100,
-        save_dir: str = "IICTrainer",
-        checkpoint_path: str = None,
-        device="cpu",
-        head_control_params: Dict[str, int] = {"B": 1},
-        use_sobel: bool = False,
-        config: dict = None,
-        VAT_params: Dict[str, Union[int, float, str]] = {"name": "kl"},
-        **kwargs,
+            self,
+            model: Model,
+            train_loader_A: DataLoader,
+            train_loader_B: DataLoader,
+            val_loader: DataLoader,
+            max_epoch: int = 100,
+            save_dir: str = "IICTrainer",
+            checkpoint_path: str = None,
+            device="cpu",
+            head_control_params: Dict[str, int] = {"B": 1},
+            use_sobel: bool = False,
+            config: dict = None,
+            VAT_params: Dict[str, Union[int, float, str]] = {"name": "kl"},
+            **kwargs,
     ) -> None:
         super().__init__(
             model,
@@ -812,7 +808,7 @@ class IICGeoVATTrainer(IICVATTrainer):
         )
 
     def _trainer_specific_loss(
-        self, tf1_images: Tensor, tf2_images: Tensor, head_name: str
+            self, tf1_images: Tensor, tf2_images: Tensor, head_name: str
     ):
         vat_loss = super()._trainer_specific_loss(tf1_images, tf2_images, head_name)
         geo_loss = IICGeoTrainer._trainer_specific_loss(
@@ -823,19 +819,19 @@ class IICGeoVATTrainer(IICVATTrainer):
 
 class IICMixupTrainer(IICGeoTrainer):
     def __init__(
-        self,
-        model: Model,
-        train_loader_A: DataLoader,
-        train_loader_B: DataLoader,
-        val_loader: DataLoader,
-        max_epoch: int = 100,
-        save_dir: str = "IICTrainer",
-        checkpoint_path: str = None,
-        device="cpu",
-        head_control_params: Dict[str, int] = {"B": 1},
-        use_sobel: bool = False,
-        config: dict = None,
-        **kwargs,
+            self,
+            model: Model,
+            train_loader_A: DataLoader,
+            train_loader_B: DataLoader,
+            val_loader: DataLoader,
+            max_epoch: int = 100,
+            save_dir: str = "IICTrainer",
+            checkpoint_path: str = None,
+            device="cpu",
+            head_control_params: Dict[str, int] = {"B": 1},
+            use_sobel: bool = False,
+            config: dict = None,
+            **kwargs,
     ) -> None:
         super().__init__(
             model,
@@ -856,7 +852,7 @@ class IICMixupTrainer(IICGeoTrainer):
         )
 
     def _trainer_specific_loss(
-        self, tf1_images: Tensor, tf2_images: Tensor, head_name: str
+            self, tf1_images: Tensor, tf2_images: Tensor, head_name: str
     ):
         # just replace tf2_images with mix_up generated images
         tf1_images = tf1_images.to(self.device)
@@ -872,19 +868,19 @@ class IICMixupTrainer(IICGeoTrainer):
 
 class IICGeoVATMixupTrainer(IICGeoTrainer):
     def __init__(
-        self,
-        model: Model,
-        train_loader_A: DataLoader,
-        train_loader_B: DataLoader,
-        val_loader: DataLoader,
-        max_epoch: int = 100,
-        save_dir: str = "IICVATMixupTrainer",
-        checkpoint_path: str = None,
-        device="cpu",
-        head_control_params: Dict[str, int] = {"B": 1},
-        use_sobel: bool = False,
-        config: dict = None,
-        **kwargs,
+            self,
+            model: Model,
+            train_loader_A: DataLoader,
+            train_loader_B: DataLoader,
+            val_loader: DataLoader,
+            max_epoch: int = 100,
+            save_dir: str = "IICVATMixupTrainer",
+            checkpoint_path: str = None,
+            device="cpu",
+            head_control_params: Dict[str, int] = {"B": 1},
+            use_sobel: bool = False,
+            config: dict = None,
+            **kwargs,
     ) -> None:
         super().__init__(
             model,
@@ -905,7 +901,7 @@ class IICGeoVATMixupTrainer(IICGeoTrainer):
         )
 
     def _trainer_specific_loss(
-        self, tf1_images: Tensor, tf2_images: Tensor, head_name: str
+            self, tf1_images: Tensor, tf2_images: Tensor, head_name: str
     ):
         geo_loss = super()._trainer_specific_loss(tf1_images, tf2_images, head_name)
         mixup_loss = self.mixup_loss(tf1_images, tf2_images, head_name)

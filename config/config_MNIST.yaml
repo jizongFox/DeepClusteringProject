@@ -4,7 +4,7 @@ Arch:
   num_channel: 1
   output_k_A: 50
   output_k_B: 10
-  num_sub_heads: 1
+  num_sub_heads: 3
   semisup: False
 
 Optim:
@@ -25,7 +25,7 @@ Trainer:
   name: iic
   max_epoch: 3
   save_dir: multihead_mnist
-  device: cuda
+  device: cuda:0
   head_control_params:
     B: 1
-  use_sobel: false
+    A: 0

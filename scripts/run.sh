@@ -9,33 +9,39 @@ cd ${PROJECT_PATH}
 source $WRAPPER_PATH
 cd ${PROJECT_PATH}
 
-time=1
+time=12
 
 declare -a StringArray=(
-#"python -O main.py Config=config/config_MNIST.yaml Trainer.name=iicgeo Trainer.save_dir=mnist_1/iicgeo Trainer.max_epoch=2" \
-#"python -O main.py Config=config/config_MNIST.yaml Trainer.name=iicmixup Trainer.save_dir=mnist_1/iicmixup Trainer.max_epoch=2" \
-#"python -O main.py Config=config/config_MNIST.yaml Trainer.name=iicvat Trainer.save_dir=mnist_1/iicvat Trainer.max_epoch=2" \
-#"python -O main.py Config=config/config_MNIST.yaml Trainer.name=iicgeovat Trainer.save_dir=mnist_1/iicgeovat Trainer.max_epoch=2" \
-#"python -O main.py Config=config/config_MNIST.yaml Trainer.name=imsatvat Trainer.save_dir=mnist_1/imsatvat Trainer.max_epoch=2" \
-#"python -O main.py Config=config/config_MNIST.yaml Trainer.name=imsatmixup Trainer.save_dir=mnist_1/imsatmixup Trainer.max_epoch=2" \
-#"python -O main.py Config=config/config_MNIST.yaml Trainer.name=imsatvatgeo Trainer.save_dir=mnist_1/imsatvatgeo Trainer.max_epoch=2" \
-#"python -O main.py Config=config/config_MNIST.yaml Trainer.name=imsatvatgeomixup Trainer.save_dir=mnist_1/imsatvatgeomixup Trainer.max_epoch=2" \
-#"python -O main.py Config=config/config_CIFAR.yaml Trainer.name=iicgeo Trainer.save_dir=cifar_1/iicgeo Trainer.max_epoch=2" \
-#"python -O main.py Config=config/config_CIFAR.yaml Trainer.name=iicmixup Trainer.save_dir=cifar_1/iicmixup Trainer.max_epoch=2" \
-#"python -O main.py Config=config/config_CIFAR.yaml Trainer.name=iicvat Trainer.save_dir=cifar_1/iicvat Trainer.max_epoch=2" \
-#"python -O main.py Config=config/config_CIFAR.yaml Trainer.name=iicgeovat Trainer.save_dir=cifar_1/iicgeovat Trainer.max_epoch=2" \
-#"python -O main.py Config=config/config_CIFAR.yaml Trainer.name=imsatvat Trainer.save_dir=cifar_1/imsatvat Trainer.max_epoch=2" \
-#"python -O main.py Config=config/config_CIFAR.yaml Trainer.name=imsatmixup Trainer.save_dir=cifar_1/imsatmixup Trainer.max_epoch=2" \
-#"python -O main.py Config=config/config_CIFAR.yaml Trainer.name=imsatvatgeo Trainer.save_dir=cifar_1/imsatvatgeo Trainer.max_epoch=2" \
-#"python -O main.py Config=config/config_CIFAR.yaml Trainer.name=imsatvatgeomixup Trainer.save_dir=cifar_1/imsatvatgeomixup Trainer.max_epoch=2" \
-"python -O main.py Config=config/config_SVHN.yaml Trainer.name=iicgeo Trainer.save_dir=svhn_1/iicgeo Trainer.max_epoch=2"
-#"python -O main.py Config=config/config_SVHN.yaml Trainer.name=iicmixup Trainer.save_dir=svhn_1/iicmixup Trainer.max_epoch=2" \
-#"python -O main.py Config=config/config_SVHN.yaml Trainer.name=iicvat Trainer.save_dir=svhn_1/iicvat Trainer.max_epoch=2" \
-#"python -O main.py Config=config/config_SVHN.yaml Trainer.name=iicgeovat Trainer.save_dir=svhn_1/iicgeovat Trainer.max_epoch=2" \
-"python -O main.py Config=config/config_SVHN.yaml Trainer.name=imsatvat Trainer.save_dir=svhn_1/imsatvat Trainer.max_epoch=2"
-#"python -O main.py Config=config/config_SVHN.yaml Trainer.name=imsatmixup Trainer.save_dir=svhn_1/imsatmixup Trainer.max_epoch=2" \
-#"python -O main.py Config=config/config_SVHN.yaml Trainer.name=imsatvatgeo Trainer.save_dir=svhn_1/imsatvatgeo Trainer.max_epoch=2" \
-#"python -O main.py Config=config/config_SVHN.yaml Trainer.name=imsatvatgeomixup Trainer.save_dir=svhn_1/imsatvatgeomixup Trainer.max_epoch=2" \
+"python -O main.py Config=config/config_MNIST.yaml Trainer.name=iicgeo Trainer.save_dir=mnist_1/iicgeo Trainer.max_epoch=100" \
+"python -O main.py Config=config/config_MNIST.yaml Trainer.name=iicgeo Trainer.save_dir=mnist_2/iicgeo Trainer.max_epoch=100" \
+"python -O main.py Config=config/config_MNIST.yaml Trainer.name=iicgeo Trainer.save_dir=mnist_3/iicgeo Trainer.max_epoch=100" \
+"python -O main.py Config=config/config_MNIST.yaml Trainer.name=iicgeo Trainer.save_dir=mnist_4/iicgeo Trainer.max_epoch=100" \
+"python -O main.py Config=config/config_MNIST.yaml Trainer.name=iicgeo Trainer.save_dir=mnist_5/iicgeo Trainer.max_epoch=100" \
+"python -O main.py Config=config/config_MNIST.yaml Trainer.name=imsat Trainer.save_dir=mnist_1/imsat Trainer.max_epoch=100" \
+"python -O main.py Config=config/config_MNIST.yaml Trainer.name=imsat Trainer.save_dir=mnist_2/imsat Trainer.max_epoch=100" \
+"python -O main.py Config=config/config_MNIST.yaml Trainer.name=imsat Trainer.save_dir=mnist_3/imsat Trainer.max_epoch=100" \
+"python -O main.py Config=config/config_MNIST.yaml Trainer.name=imsat Trainer.save_dir=mnist_4/imsat Trainer.max_epoch=100" \
+"python -O main.py Config=config/config_MNIST.yaml Trainer.name=imsat Trainer.save_dir=mnist_5/imsat Trainer.max_epoch=100" \
+"python -O main.py Config=config/config_MNIST.yaml Trainer.name=imsatvat Trainer.save_dir=mnist_1/imsatvat_2.5 Trainer.max_epoch=100 Trainer.VAT_params='{name:kl, eps=2.5}'" \
+"python -O main.py Config=config/config_MNIST.yaml Trainer.name=imsatvat Trainer.save_dir=mnist_2/imsatvat_2.5 Trainer.max_epoch=100 Trainer.VAT_params='{name:kl, eps=2.5}'" \
+"python -O main.py Config=config/config_MNIST.yaml Trainer.name=imsatvat Trainer.save_dir=mnist_3/imsatvat_2.5 Trainer.max_epoch=100 Trainer.VAT_params='{name:kl, eps=2.5}'" \
+"python -O main.py Config=config/config_MNIST.yaml Trainer.name=imsatvat Trainer.save_dir=mnist_4/imsatvat_2.5 Trainer.max_epoch=100 Trainer.VAT_params='{name:kl, eps=2.5}'" \
+"python -O main.py Config=config/config_MNIST.yaml Trainer.name=imsatvat Trainer.save_dir=mnist_5/imsatvat_2.5 Trainer.max_epoch=100 Trainer.VAT_params='{name:kl, eps=2.5}'" \
+"python -O main.py Config=config/config_MNIST.yaml Trainer.name=imsatvat Trainer.save_dir=mnist_1/imsatvat_5 Trainer.max_epoch=100 Trainer.VAT_params='{name:kl, eps=5}'" \
+"python -O main.py Config=config/config_MNIST.yaml Trainer.name=imsatvat Trainer.save_dir=mnist_2/imsatvat_5 Trainer.max_epoch=100 Trainer.VAT_params='{name:kl, eps=5}'" \
+"python -O main.py Config=config/config_MNIST.yaml Trainer.name=imsatvat Trainer.save_dir=mnist_3/imsatvat_5 Trainer.max_epoch=100 Trainer.VAT_params='{name:kl, eps=5}'" \
+"python -O main.py Config=config/config_MNIST.yaml Trainer.name=imsatvat Trainer.save_dir=mnist_4/imsatvat_5 Trainer.max_epoch=100 Trainer.VAT_params='{name:kl, eps=5}'" \
+"python -O main.py Config=config/config_MNIST.yaml Trainer.name=imsatvat Trainer.save_dir=mnist_5/imsatvat_5 Trainer.max_epoch=100 Trainer.VAT_params='{name:kl, eps=5}'" \
+"python -O main.py Config=config/config_MNIST.yaml Trainer.name=imsatvat Trainer.save_dir=mnist_1/imsatvat_7.5 Trainer.max_epoch=100 Trainer.VAT_params='{name:kl, eps=7.5}'" \
+"python -O main.py Config=config/config_MNIST.yaml Trainer.name=imsatvat Trainer.save_dir=mnist_2/imsatvat_7.5 Trainer.max_epoch=100 Trainer.VAT_params='{name:kl, eps=7.5}'" \
+"python -O main.py Config=config/config_MNIST.yaml Trainer.name=imsatvat Trainer.save_dir=mnist_3/imsatvat_7.5 Trainer.max_epoch=100 Trainer.VAT_params='{name:kl, eps=7.5}'" \
+"python -O main.py Config=config/config_MNIST.yaml Trainer.name=imsatvat Trainer.save_dir=mnist_4/imsatvat_7.5 Trainer.max_epoch=100 Trainer.VAT_params='{name:kl, eps=7.5}'" \
+"python -O main.py Config=config/config_MNIST.yaml Trainer.name=imsatvat Trainer.save_dir=mnist_5/imsatvat_7.5 Trainer.max_epoch=100 Trainer.VAT_params='{name:kl, eps=7.5}'" \
+"python -O main.py Config=config/config_MNIST.yaml Trainer.name=imsatvat Trainer.save_dir=mnist_1/imsatvat_10 Trainer.max_epoch=100 Trainer.VAT_params='{name:kl, eps=10}'" \
+"python -O main.py Config=config/config_MNIST.yaml Trainer.name=imsatvat Trainer.save_dir=mnist_2/imsatvat_10 Trainer.max_epoch=100 Trainer.VAT_params='{name:kl, eps=10}'" \
+"python -O main.py Config=config/config_MNIST.yaml Trainer.name=imsatvat Trainer.save_dir=mnist_3/imsatvat_10 Trainer.max_epoch=100 Trainer.VAT_params='{name:kl, eps=10}'" \
+"python -O main.py Config=config/config_MNIST.yaml Trainer.name=imsatvat Trainer.save_dir=mnist_4/imsatvat_10 Trainer.max_epoch=100 Trainer.VAT_params='{name:kl, eps=10}'" \
+"python -O main.py Config=config/config_MNIST.yaml Trainer.name=imsatvat Trainer.save_dir=mnist_5/imsatvat_10 Trainer.max_epoch=100 Trainer.VAT_params='{name:kl, eps=10}'" \
 )
 #
 for cmd in "${StringArray[@]}"

@@ -12,7 +12,7 @@ DATA_PATH.mkdir(exist_ok=True)
 
 
 def get_dataloader(
-    config: Dict[str, Union[float, int, dict, str]]
+        config: Dict[str, Union[float, int, dict, str]]
 ) -> Tuple[DataLoader, DataLoader, DataLoader]:
     """
     get dataloader for IIC project
@@ -89,14 +89,15 @@ def get_dataloader(
 
 
 def get_trainer(
-    config: Dict[str, Union[float, int, dict]]
+        config: Dict[str, Union[float, int, dict]]
 ) -> Type[trainer.ClusteringGeneralTrainer]:
     assert config.get("Trainer").get("name"), config.get("Trainer").get("name")
     trainer_mapping: Dict[str, Type[trainer.ClusteringGeneralTrainer]] = {
-        "iicgeo": trainer.IICGeoTrainer,
-        "iicmixup": trainer.IICMixupTrainer,
-        "iicvat": trainer.IICVATTrainer,
-        "iicgeovat": trainer.IICGeoVATTrainer,
+        "iicgeo": trainer.IICGeoTrainer,  # the basic iic
+        "iicmixup": trainer.IICMixupTrainer,  # the basic IIC with mixup as the data augmentation
+        "iicvat": trainer.IICVATTrainer,  # the basic iic with VAT as the basic data augmentation
+        "iicgeovat": trainer.IICGeoVATTrainer,  # IIC with geo and vat as the data augmentation
+        "imsat": trainer.IMSATAbstractTrainer,  # imsat without any regularization
         "imsatvat": trainer.IMSATVATTrainer,
         "imsatmixup": trainer.IMSATMixupTrainer,
         "imsatvatgeo": trainer.IMSATVATGeoTrainer,
