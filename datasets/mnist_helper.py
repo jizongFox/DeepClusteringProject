@@ -116,6 +116,8 @@ class MNISTSemiSupervisedDatasetInterface(SemiDatasetInterface):
 
 
 default_mnist_img_transform = {
+    # output shape would be 28*28
+
     "tf1": transforms.Compose(
         [
             transforms.ToTensor(),
@@ -141,6 +143,7 @@ default_mnist_img_transform = {
 }
 
 default_mnist_strong_transform = {
+    # output shape would be 24*24
     "tf1": transforms.Compose(
         [
             pil_augment.RandomChoice(

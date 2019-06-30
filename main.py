@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Tuple, Dict, Union, Type
+from typing import Dict, Union, Type, Tuple
 
 from deepclustering.manager import ConfigManger
 from deepclustering.model import Model, to_Apex
@@ -12,6 +12,7 @@ DATA_PATH = Path(".data")
 DATA_PATH.mkdir(exist_ok=True)
 
 fix_all_seed(2)
+
 
 def get_dataloader(
         config: Dict[str, Union[float, int, dict, str]]
@@ -32,10 +33,9 @@ def get_dataloader(
 
     elif config.get("Config", DEFAULT_CONFIG).split("_")[-1].lower() == "mnist.yaml":
         from datasets import (
-            default_mnist_img_transform as img_transforms,
+            default_mnist_strong_transform as img_transforms,
             MNISTClusteringDatasetInterface as DatasetInterface,
         )
-
         train_split_partition = ["train", "val"]
         val_split_partition = ["train", "val"]
     elif config.get("Config", DEFAULT_CONFIG).split("_")[-1].lower() == "stl10.yaml":
@@ -43,7 +43,6 @@ def get_dataloader(
             default_stl10_img_transform as img_transforms,
             STL10ClusteringDatasetInterface as DatasetInterface,
         )
-
         train_split_partition = ["train", "test", "train+unlabeled"]
         val_split_partition = ["train", "test"]
     elif config.get("Config", DEFAULT_CONFIG).split("_")[-1].lower() == "svhn.yaml":
@@ -51,7 +50,6 @@ def get_dataloader(
             default_svhn_img_transform as img_transforms,
             SVHNClusteringDatasetInterface as DatasetInterface,
         )
-
         train_split_partition = ["train", "test"]
         val_split_partition = ["train", "test"]
     else:
@@ -115,8 +113,37 @@ DEFAULT_CONFIG = "config/config_MNIST.yaml"
 merged_config = ConfigManger(
     DEFAULT_CONFIG_PATH=DEFAULT_CONFIG, verbose=True, integrality_check=True
 ).config
-
 train_loader_A, train_loader_B, val_loader = get_dataloader(merged_config)
+# tf1 = Compose([ToTensor()])
+# tf2 = Compose([RandomCrop((28, 28), padding=2), ToTensor()])
+# train_loader_A = MNISTClusteringDatasetInterface(
+#     data_root=DATA_PATH,
+#     split_partitions=["train", "val"],
+#     **merged_config["DataLoader"]
+# ).ParallelDataLoader(
+#     tf1,
+#     tf2,
+#     tf2,
+#     tf2,
+#     tf2
+# )
+# train_loader_B = MNISTClusteringDatasetInterface(
+#     data_root=DATA_PATH,
+#     split_partitions=["train", "val"],
+#     **merged_config["DataLoader"]
+# ).ParallelDataLoader(
+#     tf1,
+#     tf2,
+#     tf2,
+#     tf2,
+#     tf2
+# )
+#
+# val_loader = MNISTClusteringDatasetInterface(
+#     data_root=DATA_PATH,
+#     split_partitions=["train", "val"],
+#     **merged_config["DataLoader"]
+# ).ParallelDataLoader(tf1)
 
 # create model:
 model = Model(

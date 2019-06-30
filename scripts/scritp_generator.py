@@ -19,13 +19,13 @@ trainer_names = [
     "imsat",
     "imsatvat",
     # "imsatmixup",
-    # "imsatvatgeo",
+    "imsatvatgeo",
     # "imsatvatgeomixup"
 ]
 save_dirs = trainer_names
 # datasets = ["mnist", "cifar", "svhn"]
 datasets = ["mnist"]
-randoms = [5]
+randoms = [1]
 randoms = list(range(1, randoms[0] + 1))
 cmds = []
 

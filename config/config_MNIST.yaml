@@ -1,5 +1,5 @@
 Arch:
-  name: clusternetimsat
+  name: clusternet6cTwoHead
   input_size: 24
   num_channel: 1
   output_k_A: 50
@@ -9,21 +9,21 @@ Arch:
 
 Optim:
   name: Adam
-  lr: 0.0002
+  lr: 0.002
 
 Scheduler:
   name: MultiStepLR
   milestones: [100, 200, 300, 400, 500, 600, 700, 800, 900]
-  gamma: 1
+  gamma: 0.8
 
 DataLoader:
   batch_size: 200
-  shuffle: false
+  shuffle: true
   num_workers: 16
 
 Trainer:
   name: iic
-  max_epoch: 3
+  max_epoch: 1000
   save_dir: multihead_mnist
   device: cuda:0
   head_control_params:

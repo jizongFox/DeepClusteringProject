@@ -1,18 +1,16 @@
-from pprint import pprint
-
 from torch.distributions import Beta
 
 __all__ = ["VATModuleInterface", "MixUp"]
 
 import contextlib
-from typing import Callable, Union, Dict, Tuple
+from typing import Union, Dict, Tuple
 
 import torch
 import torch.nn as nn
 from deepclustering.loss.IID_losses import IIDLoss
 from deepclustering.loss.loss import KL_div
 from deepclustering.model import Model
-from deepclustering.utils import simplex, _warnings, nice_dict, assert_list
+from deepclustering.utils import simplex, assert_list
 from torch import Tensor
 
 
@@ -52,7 +50,7 @@ class VATLoss(nn.Module):
         self.prop_eps = prop_eps
         self.distance_func = distance_func
 
-    def forward(self, model, x: torch.Tensor,**kwargs):
+    def forward(self, model, x: torch.Tensor, **kwargs):
         """
         We support the output of the model would be a simplex.
         :param model:
@@ -111,9 +109,9 @@ class VATLoss_Multihead(nn.Module):
         self.prop_eps = prop_eps
         self.distance_func = distance_func
 
-    def forward(self, model: Model, x: torch.Tensor,**kwargs):
+    def forward(self, model: Model, x: torch.Tensor, **kwargs):
         with torch.no_grad():
-            pred = model(x,**kwargs)
+            pred = model(x, **kwargs)
         assert assert_list(simplex, pred), f"pred should be a list of simplex."
 
         # prepare random unit tensor
@@ -124,7 +122,7 @@ class VATLoss_Multihead(nn.Module):
             # calc adversarial direction
             for _ in range(self.ip):
                 d.requires_grad_()
-                pred_hat = model(x + self.xi * d,**kwargs)
+                pred_hat = model(x + self.xi * d, **kwargs)
                 assert assert_list(simplex, pred_hat)
                 # here the pred_hat is the list of simplex
                 adv_distance = list(map(lambda p_, p: self.distance_func(p_, p), pred_hat, pred))
@@ -143,23 +141,23 @@ class VATLoss_Multihead(nn.Module):
             else:
                 raise NotImplementedError(f"eps should be tensor or float, given {self.eps}.")
 
-            pred_hat = model(x + r_adv,**kwargs)
+            pred_hat = model(x + r_adv, **kwargs)
             assert assert_list(simplex, pred_hat)
-            lds =  list(map(lambda p_, p: self.distance_func(p_, p), pred_hat, pred))  # type: ignore
+            lds = list(map(lambda p_, p: self.distance_func(p_, p), pred_hat, pred))  # type: ignore
             lds: torch.Tensor = sum(lds) / float(len(lds))
 
         return lds, (x + r_adv).detach(), r_adv.detach()
 
 
 def VATModuleInterface(params: Dict[str, Union[str, int, float]], verbose: bool = True):
-    loss_name = params["name"]
+    loss_name = params.get("name", "kl")
     assert loss_name in ("kl", "mi")
     iid_loss = lambda x, y: IIDLoss()(x, y)[0]
 
     loss_func = KL_div(reduce=True) if loss_name == "kl" else iid_loss
 
     return VATLoss_Multihead(
-        distance_func=loss_func,  **{k: v for k, v in params.items() if k != "name"}
+        distance_func=loss_func, **{k: v for k, v in params.items() if k != "name"}
     )
 
 

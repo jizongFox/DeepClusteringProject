@@ -326,9 +326,9 @@ class IMSATAbstractTrainer(ClusteringGeneralTrainer):
     @property
     def _training_report_dict(self):
         report_dict = {
-            "train_mi": self.METERINTERFACE["train_mi"].summary()["mean"],
-            "train_entropy": self.METERINTERFACE["train_entropy"].summary()["mean"],
-            "train_centropy": self.METERINTERFACE["train_centropy"].summary()["mean"],
+            "mi": self.METERINTERFACE["train_mi"].summary()["mean"],
+            "entropy": self.METERINTERFACE["train_entropy"].summary()["mean"],
+            "centropy": self.METERINTERFACE["train_centropy"].summary()["mean"],
         }
         return dict_filter(report_dict)
 
@@ -358,7 +358,7 @@ class IMSATAbstractTrainer(ClusteringGeneralTrainer):
         self.METERINTERFACE["train_entropy"].add(entropies.item())
         self.METERINTERFACE["train_centropy"].add(centropies.item())
         reg_loss = self._regulaze(tf1_images, tf2_images, tf1_pred_simplex, head_name)
-        return -batch_loss + reg_loss
+        return -batch_loss * 0.1 + reg_loss
 
     def _regulaze(
             self,
@@ -367,7 +367,7 @@ class IMSATAbstractTrainer(ClusteringGeneralTrainer):
             img_pred_simplex: List[Tensor],
             head_name: str = "B",
     ) -> Tensor:
-        return torch.Tensor([0], device=self.device)
+        return torch.Tensor([0]).to(self.device)
 
 
 class IMSATVATTrainer(IMSATAbstractTrainer):
@@ -393,10 +393,11 @@ class IMSATVATTrainer(IMSATAbstractTrainer):
             VAT_params: Dict[str, Union[int, float, str]] = {"name": "kl", "eps": 10},
             **kwargs,
     ) -> None:
-        assert VAT_params.get("name") == "kl", (
-            f"In IMSAT framework, KL distance is the only to be supported, "
-            f"given {VAT_params.get('name')}."
-        )
+        if VAT_params.get("name"):
+            assert VAT_params.get("name") == "kl", (
+                f"In IMSAT framework, KL distance is the only to be supported, "
+                f"given {VAT_params.get('name')}."
+            )
         super().__init__(
             model,
             train_loader_A,
@@ -424,7 +425,7 @@ class IMSATVATTrainer(IMSATAbstractTrainer):
     def _training_report_dict(self):
         report_dict = super()._training_report_dict
         report_dict.update(
-            {"train_adv": self.METERINTERFACE["train_adv"].summary()["mean"]}
+            {"adv": self.METERINTERFACE["train_adv"].summary()["mean"]}
         )
         return dict_filter(report_dict)
 
@@ -437,43 +438,10 @@ class IMSATVATTrainer(IMSATAbstractTrainer):
     ) -> Tensor:
         reg_loss, *_ = self.reg_module(self.model.torchnet, images, head=head_name)
         self.METERINTERFACE["train_adv"].add(reg_loss.item())
-        return reg_loss * 10
+        return reg_loss
 
 
 class IMSATVATGeoTrainer(IMSATVATTrainer):
-    def __init__(
-            self,
-            model: Model,
-            train_loader_A: DataLoader,
-            train_loader_B: DataLoader,
-            val_loader: DataLoader,
-            max_epoch: int = 100,
-            save_dir: str = "IMSATVATGeoTrainer",
-            checkpoint_path: str = None,
-            device="cpu",
-            head_control_params: Dict[str, int] = {"B": 1},
-            use_sobel: bool = False,
-            config: Dict[str, Union[int, float, str, Dict[str, Any]]] = None,
-            MI_dict: Dict[str, Union[int, float, str]] = {},
-            VAT_params: Dict[str, Union[int, float, str]] = {"name": "kl"},
-            **kwargs,
-    ) -> None:
-        super().__init__(
-            model,
-            train_loader_A,
-            train_loader_B,
-            val_loader,
-            max_epoch,
-            save_dir,
-            checkpoint_path,
-            device,
-            head_control_params,
-            use_sobel,
-            config,
-            MI_dict,
-            VAT_params,
-            **kwargs,
-        )
 
     def __init_meters__(self) -> List[Union[str, List[str]]]:
         columns = super().__init_meters__()
@@ -484,7 +452,7 @@ class IMSATVATGeoTrainer(IMSATVATTrainer):
     def _training_report_dict(self):
         report_dict = super()._training_report_dict
         report_dict.update(
-            {"train_geo": self.METERINTERFACE["train_geo"].summary()["mean"]}
+            {"geo": self.METERINTERFACE["train_geo"].summary()["mean"]}
         )
         return dict_filter(report_dict)
 
@@ -502,14 +470,12 @@ class IMSATVATGeoTrainer(IMSATVATTrainer):
         assert assert_list(simplex, tf_pred_simplex) and len(tf_pred_simplex) == len(img_pred_simplex)
         # kl div:
         geo_losses: List[Tensor] = []
-        for subhead, (tf1_pred, tf2_pred) in enumerate(
-                zip(img_pred_simplex, tf_pred_simplex)
-        ):
+        for subhead, (tf1_pred, tf2_pred) in enumerate(zip(img_pred_simplex, tf_pred_simplex)):
             assert simplex(tf1_pred) and simplex(tf2_pred)
             geo_losses.append(self.kl_div(tf2_pred, tf1_pred.detach()))
         geo_losses: Tensor = sum(geo_losses) / len(geo_losses)
         self.METERINTERFACE["train_geo"].add(geo_losses.item())
-        return vat_loss + geo_losses * 10
+        return vat_loss + geo_losses
 
 
 class IMSATMixupTrainer(IMSATVATTrainer):
@@ -521,9 +487,9 @@ class IMSATMixupTrainer(IMSATVATTrainer):
     def __init__(
             self,
             model: Model,
-            train_loader_A: DataLoader,
-            train_loader_B: DataLoader,
-            val_loader: DataLoader,
+            train_loader_A: DataLoader = None,
+            train_loader_B: DataLoader = None,
+            val_loader: DataLoader = None,
             max_epoch: int = 100,
             save_dir: str = "IMSATVATTrainer",
             checkpoint_path: str = None,
