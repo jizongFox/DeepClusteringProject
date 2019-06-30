@@ -170,7 +170,7 @@ class ClusteringGeneralTrainer(_Trainer):
             assert head_name in ("A", "B"), head_name
             train_loader = eval(
                 f"train_loader_{head_name}"
-            )  # change the dataloader for different head
+            )  # change the datasets for different head
             for head_epoch in range(head_iterations):
                 # given one head, one iteration in this head, and one train_loader.
                 train_loader_: tqdm = tqdm_(
@@ -229,7 +229,7 @@ class ClusteringGeneralTrainer(_Trainer):
         subhead_accs = []
         val_loader_.set_description(f"Validating epoch: {epoch}")
         for batch, image_labels in enumerate(val_loader_):
-            images, gt = list(zip(*image_labels))
+            images, gt, *_ = list(zip(*image_labels))
             images, gt = images[0].to(self.device), gt[0].to(self.device)
             if self.use_sobel:
                 images = self.sobel(images)
@@ -311,7 +311,7 @@ class IMSATAbstractTrainer(ClusteringGeneralTrainer):
             **kwargs,
         )
 
-        self.kl_div = KL_div()
+        self.kl_div = KL_div(reduce=True)
 
     def __init_meters__(self) -> List[Union[str, List[str]]]:
         colum_to_draw = super().__init_meters__()
@@ -367,7 +367,7 @@ class IMSATAbstractTrainer(ClusteringGeneralTrainer):
             img_pred_simplex: List[Tensor],
             head_name: str = "B",
     ) -> Tensor:
-        return torch.Tensor([0]).to(self.device)
+        return torch.Tensor([0], device=self.device)
 
 
 class IMSATVATTrainer(IMSATAbstractTrainer):
@@ -390,7 +390,7 @@ class IMSATVATTrainer(IMSATAbstractTrainer):
             use_sobel: bool = False,
             config: Dict[str, Union[int, float, str, Dict[str, Any]]] = None,
             MI_dict: Dict[str, Union[int, float, str]] = {},
-            VAT_params: Dict[str, Union[int, float, str]] = {"name": "kl", "eps": 2.5},
+            VAT_params: Dict[str, Union[int, float, str]] = {"name": "kl", "eps": 10},
             **kwargs,
     ) -> None:
         assert VAT_params.get("name") == "kl", (
@@ -437,7 +437,7 @@ class IMSATVATTrainer(IMSATAbstractTrainer):
     ) -> Tensor:
         reg_loss, *_ = self.reg_module(self.model.torchnet, images, head=head_name)
         self.METERINTERFACE["train_adv"].add(reg_loss.item())
-        return reg_loss
+        return reg_loss * 10
 
 
 class IMSATVATGeoTrainer(IMSATVATTrainer):
@@ -499,18 +499,17 @@ class IMSATVATGeoTrainer(IMSATVATTrainer):
 
         tf_images = tf_images.to(self.device)
         tf_pred_simplex = self.model.torchnet(tf_images, head=head_name)
-        assert simplex(tf_pred_simplex[0]) and len(tf_pred_simplex) == len(
-            img_pred_simplex
-        )
+        assert assert_list(simplex, tf_pred_simplex) and len(tf_pred_simplex) == len(img_pred_simplex)
         # kl div:
         geo_losses: List[Tensor] = []
         for subhead, (tf1_pred, tf2_pred) in enumerate(
                 zip(img_pred_simplex, tf_pred_simplex)
         ):
+            assert simplex(tf1_pred) and simplex(tf2_pred)
             geo_losses.append(self.kl_div(tf2_pred, tf1_pred.detach()))
         geo_losses: Tensor = sum(geo_losses) / len(geo_losses)
         self.METERINTERFACE["train_geo"].add(geo_losses.item())
-        return vat_loss + geo_losses
+        return vat_loss + geo_losses * 10
 
 
 class IMSATMixupTrainer(IMSATVATTrainer):

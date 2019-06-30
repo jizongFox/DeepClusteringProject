@@ -73,7 +73,7 @@ class MNIST(data.Dataset):
         return self.data
 
     def __init__(
-        self, root, train=True, transform=None, target_transform=None, download=False
+            self, root, train=True, transform=None, target_transform=None, download=False
     ):
         self.root = os.path.expanduser(root)
         self.transform = transform
@@ -116,7 +116,7 @@ class MNIST(data.Dataset):
         if self.target_transform is not None:
             target = self.target_transform(target)
 
-        return img, target
+        return img, target, index
 
     def __len__(self):
         return int(len(self.data))
@@ -142,7 +142,7 @@ class MNIST(data.Dataset):
     def extract_gzip(gzip_path, remove_finished=False):
         print("Extracting {}".format(gzip_path))
         with open(gzip_path.replace(".gz", ""), "wb") as out_f, gzip.GzipFile(
-            gzip_path
+                gzip_path
         ) as zip_f:
             out_f.write(zip_f.read())
         if remove_finished:

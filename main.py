@@ -3,6 +3,7 @@ from typing import Tuple, Dict, Union, Type
 
 from deepclustering.manager import ConfigManger
 from deepclustering.model import Model, to_Apex
+from deepclustering.utils import fix_all_seed
 from torch.utils.data import DataLoader
 
 import ClusteringGeneralTrainer as trainer
@@ -10,17 +11,18 @@ import ClusteringGeneralTrainer as trainer
 DATA_PATH = Path(".data")
 DATA_PATH.mkdir(exist_ok=True)
 
+fix_all_seed(2)
 
 def get_dataloader(
         config: Dict[str, Union[float, int, dict, str]]
 ) -> Tuple[DataLoader, DataLoader, DataLoader]:
     """
-    get dataloader for IIC project
+    get datasets for IIC project
     :param config:
     :return:
     """
     if config.get("Config", DEFAULT_CONFIG).split("_")[-1].lower() == "cifar.yaml":
-        from dataloader import (
+        from datasets import (
             default_cifar10_img_transform as img_transforms,
             Cifar10ClusteringDatasetInterface as DatasetInterface,
         )
@@ -29,7 +31,7 @@ def get_dataloader(
         val_split_partition = ["train", "val"]
 
     elif config.get("Config", DEFAULT_CONFIG).split("_")[-1].lower() == "mnist.yaml":
-        from dataloader import (
+        from datasets import (
             default_mnist_img_transform as img_transforms,
             MNISTClusteringDatasetInterface as DatasetInterface,
         )
@@ -37,7 +39,7 @@ def get_dataloader(
         train_split_partition = ["train", "val"]
         val_split_partition = ["train", "val"]
     elif config.get("Config", DEFAULT_CONFIG).split("_")[-1].lower() == "stl10.yaml":
-        from dataloader import (
+        from datasets import (
             default_stl10_img_transform as img_transforms,
             STL10ClusteringDatasetInterface as DatasetInterface,
         )
@@ -45,7 +47,7 @@ def get_dataloader(
         train_split_partition = ["train", "test", "train+unlabeled"]
         val_split_partition = ["train", "test"]
     elif config.get("Config", DEFAULT_CONFIG).split("_")[-1].lower() == "svhn.yaml":
-        from dataloader import (
+        from datasets import (
             default_svhn_img_transform as img_transforms,
             SVHNClusteringDatasetInterface as DatasetInterface,
         )

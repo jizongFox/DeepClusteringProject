@@ -103,7 +103,7 @@ class ClusterDatasetInterface(object):
         :param image_transform: Callable function for both tran and val
         :param target_transform: Callable function for target such as remapping
         :param dataset_dict: supplementary options for datasets
-        :param dataloader_dict: supplementary options for dataloader
+        :param dataloader_dict: supplementary options for datasets
         :return: type: Dataloader
         """
         concatSet = self._creat_concatDataset(

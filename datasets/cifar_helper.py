@@ -1,5 +1,5 @@
 """
-This is a wrapper script to help to return the cifar dataloader.
+This is a wrapper script to help to return the cifar datasets.
 """
 
 __all__ = [
