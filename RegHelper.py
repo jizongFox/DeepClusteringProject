@@ -170,6 +170,7 @@ class MixUp(object):
         self.device = device
         self.beta_distr = Beta(torch.tensor([1.0]), torch.tensor([1.0]))
         self.num_class = num_classes
+        print(colored("Mixup initialized.", "green"))
 
     def __call__(self, img1: Tensor, pred1: Tensor, img2: Tensor, pred2: Tensor):
         assert simplex(pred1) and simplex(pred2)
@@ -195,7 +196,6 @@ def pred_histgram(tf_writter: SummaryWriter, preds: Tensor, epoch: int):
     preds = preds.cpu().numpy()
     for subhead in range(num_subheads):
         tf_writter.add_histogram(tag=f'subhead_{subhead}_pred',
-                                 values=preds[subhead],
+                                 values=preds[subhead] + 1,
                                  global_step=epoch,
                                  )
-    print('plot ends.')

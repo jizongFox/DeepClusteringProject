@@ -448,6 +448,7 @@ class IMSATMixupTrainer(IMSATVATTrainer):
     """
     implement Mixup in the regularization method
     You will use KL as the distance function to link the two
+    No VAT_params can be provided here.
     """
 
     def __init__(self, model: Model, train_loader_A: DataLoader, train_loader_B: DataLoader, val_loader: DataLoader,
@@ -458,9 +459,18 @@ class IMSATMixupTrainer(IMSATVATTrainer):
         super().__init__(model, train_loader_A, train_loader_B, val_loader, max_epoch, save_dir, checkpoint_path,
                          device, head_control_params, use_sobel, config, MI_params, **kwargs)
         # override the regularzation module
+        print("Override VAT module.")
         self.reg_module = MixUp(
             device=self.device, num_classes=self.model.arch_dict["output_k_B"]
         )
+        self.METERINTERFACE.register_new_meter("train_mixup", AverageValueMeter())
+        self.drawer.columns_to_draw.insert(-1, "train_mixup_mean")
+
+    @property
+    def _training_report_dict(self):
+        report_dict = super()._training_report_dict
+        report_dict.update({"mixup": self.METERINTERFACE['train_mixup'].summary()["mean"]})
+        return report_dict
 
     def _regulaze(
             self,
@@ -480,7 +490,7 @@ class IMSATMixupTrainer(IMSATVATTrainer):
             subhead_loss = self.kl_div(self.model(mixup_img)[subhead], mixup_label)
             reg_losses.append(subhead_loss)
         reg_losses: Tensor = sum(reg_losses) / len(reg_losses)
-        self.METERINTERFACE["train_reg"].add(reg_losses.item())
+        self.METERINTERFACE["train_mixup"].add(reg_losses.item())
         return reg_losses
 
 

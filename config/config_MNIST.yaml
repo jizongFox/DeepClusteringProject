@@ -22,10 +22,14 @@ DataLoader:
   num_workers: 16
 
 Trainer:
-  name: iic
+  name: imsatvat
   max_epoch: 1000
   save_dir: multihead_mnist
   device: cuda:0
   head_control_params:
     B: 1
     A: 0
+  VAT_params:
+    eps: 12.5
+
+# for mnist dataset, imsat vat trainer VAT_params. eps should be greater than 10.
