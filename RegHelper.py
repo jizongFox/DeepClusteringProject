@@ -195,7 +195,6 @@ def pred_histgram(tf_writter: SummaryWriter, preds: Tensor, epoch: int):
     preds = preds.cpu().numpy()
     for subhead in range(num_subheads):
         tf_writter.add_histogram(tag=f'subhead_{subhead}_pred',
-                                 values=preds[subhead],
+                                 values=preds[subhead] + 1,
                                  global_step=epoch,
                                  )
-    print('plot ends.')
