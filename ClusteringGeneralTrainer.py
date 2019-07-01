@@ -24,7 +24,7 @@ from torch import nn, Tensor
 from torch.nn import functional as F
 from torch.utils.data import DataLoader
 
-from RegHelper import VATModuleInterface, MixUp
+from RegHelper import VATModuleInterface, MixUp, pred_histgram
 
 matplotlib.use("agg")
 
@@ -261,6 +261,7 @@ class ClusteringGeneralTrainer(_Trainer):
         report_dict = self._eval_report_dict
         print(f"Validating epoch: {epoch} : {nice_dict(report_dict)}")
         self.writer.add_scalar_with_tag("val", report_dict, epoch)
+        pred_histgram(self.writer, preds, epoch=epoch)
 
         return self.METERINTERFACE.val_best_acc.summary()["mean"]
 
@@ -279,28 +280,16 @@ class IMSATAbstractTrainer(ClusteringGeneralTrainer):
     In IMSAT, the loss usually only takes the basic transformed image tf1 without touching tf2
     """
 
-    def __init__(
-            self,
-            model: Model,
-            train_loader_A: DataLoader,
-            train_loader_B: DataLoader,
-            val_loader: DataLoader,
-            max_epoch: int = 100,
-            save_dir: str = "IMSATAbstractTrainer",
-            checkpoint_path: str = None,
-            device="cpu",
-            head_control_params: Dict[str, int] = {"B": 1},
-            use_sobel: bool = False,
-            config: dict = None,
-            MI_dict: dict = {},
-            **kwargs,
-    ) -> None:
+    def __init__(self, model: Model, train_loader_A: DataLoader, train_loader_B: DataLoader, val_loader: DataLoader,
+                 max_epoch: int = 100, save_dir: str = "IMSATAbstractTrainer", checkpoint_path: str = None,
+                 device="cpu", head_control_params: Dict[str, int] = {"B": 1}, use_sobel: bool = False,
+                 config: dict = None, MI_params: dict = {}, **kwargs) -> None:
         super().__init__(
             model,
             train_loader_A,
             train_loader_B,
             val_loader,
-            MultualInformaton_IMSAT(**MI_dict),
+            MultualInformaton_IMSAT(**MI_params),
             max_epoch,
             save_dir,
             checkpoint_path,
@@ -376,43 +365,20 @@ class IMSATVATTrainer(IMSATAbstractTrainer):
     You will never use mi in IMSAT framework.
     """
 
-    def __init__(
-            self,
-            model: Model,
-            train_loader_A: DataLoader,
-            train_loader_B: DataLoader,
-            val_loader: DataLoader,
-            max_epoch: int = 100,
-            save_dir: str = "IMSATVATTrainer",
-            checkpoint_path: str = None,
-            device="cpu",
-            head_control_params: Dict[str, int] = {"B": 1},
-            use_sobel: bool = False,
-            config: Dict[str, Union[int, float, str, Dict[str, Any]]] = None,
-            MI_dict: Dict[str, Union[int, float, str]] = {},
-            VAT_params: Dict[str, Union[int, float, str]] = {"name": "kl", "eps": 10},
-            **kwargs,
-    ) -> None:
+    def __init__(self, model: Model, train_loader_A: DataLoader, train_loader_B: DataLoader, val_loader: DataLoader,
+                 max_epoch: int = 100, save_dir: str = "IMSATAbstractTrainer", checkpoint_path: str = None,
+                 device="cpu", head_control_params: Dict[str, int] = {"B": 1}, use_sobel: bool = False,
+                 config: Dict[str, Union[int, float, str, Dict[str, Any]]] = None,
+                 MI_params: Dict[str, Union[int, float, str]] = {},
+                 VAT_params: Dict[str, Union[int, float, str]] = {},
+                 **kwargs: Dict[str, Union[int, float, str]]) -> None:
         if VAT_params.get("name"):
             assert VAT_params.get("name") == "kl", (
                 f"In IMSAT framework, KL distance is the only to be supported, "
                 f"given {VAT_params.get('name')}."
             )
-        super().__init__(
-            model,
-            train_loader_A,
-            train_loader_B,
-            val_loader,
-            max_epoch,
-            save_dir,
-            checkpoint_path,
-            device,
-            head_control_params,
-            use_sobel,
-            config,
-            MI_dict,
-            **kwargs,
-        )
+        super().__init__(model, train_loader_A, train_loader_B, val_loader, max_epoch, save_dir, checkpoint_path,
+                         device, head_control_params, use_sobel, config, MI_params, **kwargs)
         self.reg_module = VATModuleInterface(VAT_params)
 
     def __init_meters__(self) -> List[Union[str, List[str]]]:
@@ -484,38 +450,13 @@ class IMSATMixupTrainer(IMSATVATTrainer):
     You will use KL as the distance function to link the two
     """
 
-    def __init__(
-            self,
-            model: Model,
-            train_loader_A: DataLoader = None,
-            train_loader_B: DataLoader = None,
-            val_loader: DataLoader = None,
-            max_epoch: int = 100,
-            save_dir: str = "IMSATVATTrainer",
-            checkpoint_path: str = None,
-            device="cpu",
-            head_control_params: Dict[str, int] = {"B": 1},
-            use_sobel: bool = False,
-            config: Dict[str, Union[int, float, str, Dict[str, Any]]] = None,
-            MI_dict: Dict[str, Union[int, float, str]] = {},
-            **kwargs,
-    ) -> None:
-        super().__init__(
-            model,
-            train_loader_A,
-            train_loader_B,
-            val_loader,
-            max_epoch,
-            save_dir,
-            checkpoint_path,
-            device,
-            head_control_params,
-            use_sobel,
-            config,
-            MI_dict,
-            {"name": "kl"},
-            **kwargs,
-        )
+    def __init__(self, model: Model, train_loader_A: DataLoader, train_loader_B: DataLoader, val_loader: DataLoader,
+                 max_epoch: int = 100, save_dir: str = "IMSATAbstractTrainer", checkpoint_path: str = None,
+                 device="cpu", head_control_params: Dict[str, int] = {"B": 1}, use_sobel: bool = False,
+                 config: Dict[str, Union[int, float, str, Dict[str, Any]]] = None,
+                 MI_params: Dict[str, Union[int, float, str]] = {}, **kwargs) -> None:
+        super().__init__(model, train_loader_A, train_loader_B, val_loader, max_epoch, save_dir, checkpoint_path,
+                         device, head_control_params, use_sobel, config, MI_params, **kwargs)
         # override the regularzation module
         self.reg_module = MixUp(
             device=self.device, num_classes=self.model.arch_dict["output_k_B"]
@@ -544,39 +485,14 @@ class IMSATMixupTrainer(IMSATVATTrainer):
 
 
 class IMSATVATGeoMixupTrainer(IMSATVATGeoTrainer):
-    def __init__(
-            self,
-            model: Model,
-            train_loader_A: DataLoader,
-            train_loader_B: DataLoader,
-            val_loader: DataLoader,
-            max_epoch: int = 100,
-            save_dir: str = "IMSATVATGeoMixupTrainer",
-            checkpoint_path: str = None,
-            device="cpu",
-            head_control_params: Dict[str, int] = {"B": 1},
-            use_sobel: bool = False,
-            config: Dict[str, Union[int, float, str, Dict[str, Any]]] = None,
-            MI_dict: Dict[str, Union[int, float, str]] = {},
-            VAT_params: Dict[str, Union[int, float, str]] = {"name": "kl"},
-            **kwargs,
-    ) -> None:
-        super().__init__(
-            model,
-            train_loader_A,
-            train_loader_B,
-            val_loader,
-            max_epoch,
-            save_dir,
-            checkpoint_path,
-            device,
-            head_control_params,
-            use_sobel,
-            config,
-            MI_dict,
-            VAT_params,
-            **kwargs,
-        )
+    def __init__(self, model: Model, train_loader_A: DataLoader, train_loader_B: DataLoader, val_loader: DataLoader,
+                 max_epoch: int = 100, save_dir: str = "IMSATAbstractTrainer", checkpoint_path: str = None,
+                 device="cpu", head_control_params: Dict[str, int] = {"B": 1}, use_sobel: bool = False,
+                 config: Dict[str, Union[int, float, str, Dict[str, Any]]] = None,
+                 MI_params: Dict[str, Union[int, float, str]] = {},
+                 **kwargs: Dict[str, Union[int, float, str]]) -> None:
+        super().__init__(model, train_loader_A, train_loader_B, val_loader, max_epoch, save_dir, checkpoint_path,
+                         device, head_control_params, use_sobel, config, MI_params, **kwargs)
         self.mixup_module = MixUp(
             device=self.device, num_classes=self.model.arch_dict["output_k_B"]
         )

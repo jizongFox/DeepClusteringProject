@@ -11,7 +11,10 @@ from deepclustering.loss.IID_losses import IIDLoss
 from deepclustering.loss.loss import KL_div
 from deepclustering.model import Model
 from deepclustering.utils import simplex, assert_list
+from deepclustering.utils.decorator import threaded
+from deepclustering.writer import SummaryWriter
 from torch import Tensor
+from termcolor import colored
 
 
 @contextlib.contextmanager
@@ -108,6 +111,7 @@ class VATLoss_Multihead(nn.Module):
         self.ip = ip
         self.prop_eps = prop_eps
         self.distance_func = distance_func
+        print(colored(f"VAT with eps: {self.eps}, xi: {self.xi}", "green"))
 
     def forward(self, model: Model, x: torch.Tensor, **kwargs):
         with torch.no_grad():
@@ -183,3 +187,15 @@ class MixUp(object):
         assert simplex(mixup_index)
 
         return mixup_img, mixup_label.detach(), mixup_index
+
+
+@threaded
+def pred_histgram(tf_writter: SummaryWriter, preds: Tensor, epoch: int):
+    num_subheads, num_elements = preds.shape
+    preds = preds.cpu().numpy()
+    for subhead in range(num_subheads):
+        tf_writter.add_histogram(tag=f'subhead_{subhead}_pred',
+                                 values=preds[subhead],
+                                 global_step=epoch,
+                                 )
+    print('plot ends.')

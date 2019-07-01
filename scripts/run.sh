@@ -12,23 +12,23 @@ set -e
 time=24
 
 declare -a StringArray=(
-"python -O main.py Config=config/config_MNIST.yaml Trainer.name=iicgeo Trainer.save_dir=update_imsat/mnist_1/iicgeo Trainer.max_epoch=500" \
-"python -O main.py Config=config/config_MNIST.yaml Trainer.name=imsat Trainer.save_dir=update_imsat/mnist_1/imsat Trainer.max_epoch=500" \
-"python -O main.py Config=config/config_MNIST.yaml Trainer.name=imsatvat Trainer.save_dir=update_imsat/mnist_1/imsatvat_0.25 Trainer.max_epoch=500 Trainer.VAT_params={eps:0.25}" \
-"python -O main.py Config=config/config_MNIST.yaml Trainer.name=imsatvat Trainer.save_dir=update_imsat/mnist_1/imsatvat_01 Trainer.max_epoch=500 Trainer.VAT_params={eps:1}" \
-"python -O main.py Config=config/config_MNIST.yaml Trainer.name=imsatvat Trainer.save_dir=update_imsat/mnist_1/imsatvat_2.5 Trainer.max_epoch=500 Trainer.VAT_params={eps:2.5}" \
-"python -O main.py Config=config/config_MNIST.yaml Trainer.name=imsatvat Trainer.save_dir=update_imsat/mnist_1/imsatvat_05 Trainer.max_epoch=500 Trainer.VAT_params={eps:5}" \
-"python -O main.py Config=config/config_MNIST.yaml Trainer.name=imsatvat Trainer.save_dir=update_imsat/mnist_1/imsatvat_10 Trainer.max_epoch=500 Trainer.VAT_params={eps:10}" \
-"python -O main.py Config=config/config_MNIST.yaml Trainer.name=imsatvatgeo Trainer.save_dir=update_imsat/mnist_1/imsatvatgeo_0.25 Trainer.max_epoch=500 Trainer.VAT_params={eps:0.25}" \ 
-"python -O main.py Config=config/config_MNIST.yaml Trainer.name=imsatvatgeo Trainer.save_dir=update_imsat/mnist_1/imsatvatgeo_01 Trainer.max_epoch=500 Trainer.VAT_params={eps:1}" \ 
-"python -O main.py Config=config/config_MNIST.yaml Trainer.name=imsatvatgeo Trainer.save_dir=update_imsat/mnist_1/imsatvatgeo_2.5 Trainer.max_epoch=500 Trainer.VAT_params={eps:2.5}" \ 
-"python -O main.py Config=config/config_MNIST.yaml Trainer.name=imsatvatgeo Trainer.save_dir=update_imsat/mnist_1/imsatvatgeo_05 Trainer.max_epoch=500 Trainer.VAT_params={eps:5}" \ 
-"python -O main.py Config=config/config_MNIST.yaml Trainer.name=imsatvatgeo Trainer.save_dir=update_imsat/mnist_1/imsatvatgeo_10 Trainer.max_epoch=500 Trainer.VAT_params={eps:10}" \ 
+"python -O main.py Config=config/config_MNIST.yaml Trainer.name=iicgeo Trainer.save_dir=update_imsat/mnist_1/iicgeo Trainer.max_epoch=1000" \
+"python -O main.py Config=config/config_MNIST.yaml Trainer.name=imsat Trainer.save_dir=update_imsat/mnist_1/imsat Trainer.max_epoch=1000" \
+"python -O main.py Config=config/config_MNIST.yaml Trainer.name=imsatvat Trainer.save_dir=update_imsat/mnist_1/imsatvat_0.25_MI_4 Trainer.max_epoch=1000 Trainer.VAT_params={eps:0.25} Trainer.MI_params={mu:4.0}" \
+"python -O main.py Config=config/config_MNIST.yaml Trainer.name=imsatvat Trainer.save_dir=update_imsat/mnist_1/imsatvat_01_MI_4 Trainer.max_epoch=1000 Trainer.VAT_params={eps:1} Trainer.MI_params={mu:4.0}" \
+"python -O main.py Config=config/config_MNIST.yaml Trainer.name=imsatvat Trainer.save_dir=update_imsat/mnist_1/imsatvat_2.5_MI_4 Trainer.max_epoch=1000 Trainer.VAT_params={eps:2.5} Trainer.MI_params={mu:4.0}" \
+"python -O main.py Config=config/config_MNIST.yaml Trainer.name=imsatvat Trainer.save_dir=update_imsat/mnist_1/imsatvat_05_MI_4 Trainer.max_epoch=1000 Trainer.VAT_params={eps:5} Trainer.MI_params={mu:4.0}" \
+"python -O main.py Config=config/config_MNIST.yaml Trainer.name=imsatvat Trainer.save_dir=update_imsat/mnist_1/imsatvat_10_MI_4 Trainer.max_epoch=1000 Trainer.VAT_params={eps:10} Trainer.MI_params={mu:4.0}" \
+"python -O main.py Config=config/config_MNIST.yaml Trainer.name=imsatvat Trainer.save_dir=update_imsat/mnist_1/imsatvat_0.25_MI_8 Trainer.max_epoch=1000 Trainer.VAT_params={eps:0.25} Trainer.MI_params={mu:8.0}" \
+"python -O main.py Config=config/config_MNIST.yaml Trainer.name=imsatvat Trainer.save_dir=update_imsat/mnist_1/imsatvat_01_MI_8 Trainer.max_epoch=1000 Trainer.VAT_params={eps:1} Trainer.MI_params={mu:8.0}" \
+"python -O main.py Config=config/config_MNIST.yaml Trainer.name=imsatvat Trainer.save_dir=update_imsat/mnist_1/imsatvat_2.5_MI_8 Trainer.max_epoch=1000 Trainer.VAT_params={eps:2.5} Trainer.MI_params={mu:8.0}" \
+"python -O main.py Config=config/config_MNIST.yaml Trainer.name=imsatvat Trainer.save_dir=update_imsat/mnist_1/imsatvat_05_MI_8 Trainer.max_epoch=1000 Trainer.VAT_params={eps:5} Trainer.MI_params={mu:8.0}" \
+"python -O main.py Config=config/config_MNIST.yaml Trainer.name=imsatvat Trainer.save_dir=update_imsat/mnist_1/imsatvat_10_MI_8 Trainer.max_epoch=1000 Trainer.VAT_params={eps:10} Trainer.MI_params={mu:8.0}" \
 )
 #
 for cmd in "${StringArray[@]}"
 do
 echo ${cmd}
-wrapper "${time}" "${cmd}"
-#${cmd}
+#wrapper "${time}" "${cmd}"
+${cmd}
 done
