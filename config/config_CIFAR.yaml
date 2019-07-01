@@ -3,12 +3,12 @@ Arch:
   num_channel: 2
   output_k_A: 70
   output_k_B: 10
-  num_sub_heads: 5
+  num_sub_heads: 1
   semisup: False
 
 Optim:
   name: Adam
-  lr: 0.0005
+  lr: 0.005
 
 Scheduler:
   name: MultiStepLR

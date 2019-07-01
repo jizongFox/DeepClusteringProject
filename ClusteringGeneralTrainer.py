@@ -402,6 +402,14 @@ class IMSATVATTrainer(IMSATAbstractTrainer):
             img_pred_simplex: List[Tensor],
             head_name="B",
     ) -> Tensor:
+        """
+        return VAT loss for the images and models
+        :param images:
+        :param tf_images:
+        :param img_pred_simplex:
+        :param head_name:
+        :return:
+        """
         reg_loss, *_ = self.reg_module(self.model.torchnet, images, head=head_name)
         self.METERINTERFACE["train_adv"].add(reg_loss.item())
         return reg_loss
@@ -491,7 +499,52 @@ class IMSATMixupTrainer(IMSATVATTrainer):
             reg_losses.append(subhead_loss)
         reg_losses: Tensor = sum(reg_losses) / len(reg_losses)
         self.METERINTERFACE["train_mixup"].add(reg_losses.item())
-        return reg_losses
+        return reg_losses * 0.1
+
+
+class IMSATVATMixupTrainer(IMSATVATTrainer):
+
+    def __init__(self, model: Model, train_loader_A: DataLoader, train_loader_B: DataLoader, val_loader: DataLoader,
+                 max_epoch: int = 100, save_dir: str = "IMSATVATMixupTrainer", checkpoint_path: str = None,
+                 device="cpu", head_control_params: Dict[str, int] = {"B": 1}, use_sobel: bool = False,
+                 config: Dict[str, Union[int, float, str, Dict[str, Any]]] = None,
+                 MI_params: Dict[str, Union[int, float, str]] = {}, VAT_params: Dict[str, Union[int, float, str]] = {},
+                 **kwargs: Dict[str, Union[int, float, str]]) -> None:
+        super().__init__(model, train_loader_A, train_loader_B, val_loader, max_epoch, save_dir, checkpoint_path,
+                         device, head_control_params, use_sobel, config, MI_params, VAT_params, **kwargs)
+        self.mix_module = MixUp(
+            device=self.device, num_classes=self.model.arch_dict["output_k_B"]
+        )
+        self.METERINTERFACE.register_new_meter("train_mixup", AverageValueMeter())
+        self.drawer.columns_to_draw.insert(-1, "train_mixup_mean")
+
+    @property
+    def _training_report_dict(self):
+        report_dict = super()._training_report_dict
+        report_dict.update({"mixup": self.METERINTERFACE['train_mixup'].summary()["mean"]})
+        return report_dict
+
+    def _regulaze(
+            self,
+            images: Tensor,
+            tf_images: Tensor,
+            img_pred_simplex: List[Tensor],
+            head_name="B",
+    ) -> Tensor:
+        # here just use the tf1_image to mixup
+        # nothing with tf2_images
+        vat_loss = super()._regulaze(images, tf_images, img_pred_simplex, head_name)
+        assert len(images) == len(img_pred_simplex[0])
+        mixup_losses: List[Tensor] = []
+        for subhead, tf1_pred in enumerate(img_pred_simplex):
+            mixup_img, mixup_label, mixup_index = self.mix_module(
+                images, tf1_pred, images.flip(0), tf1_pred.flip(0)
+            )
+            subhead_loss = self.kl_div(self.model(mixup_img)[subhead], mixup_label)
+            mixup_losses.append(subhead_loss)
+        mixup_losses: Tensor = sum(mixup_losses) / len(mixup_losses)
+        self.METERINTERFACE["train_mixup"].add(mixup_losses.item())
+        return mixup_losses * 0.1 + vat_loss
 
 
 class IMSATVATGeoMixupTrainer(IMSATVATGeoTrainer):
@@ -541,7 +594,7 @@ class IMSATVATGeoMixupTrainer(IMSATVATGeoTrainer):
             reg_losses.append(subhead_loss)
         reg_losses: Tensor = sum(reg_losses) / len(reg_losses)
         self.METERINTERFACE["train_mixup"].add(reg_losses.item())
-        return reg_losses + vat_geo_loss
+        return reg_losses * 0.1 + vat_geo_loss
 
 
 class IICGeoTrainer(ClusteringGeneralTrainer):
@@ -651,9 +704,7 @@ class IICVATTrainer(IICGeoTrainer):
             config,
             **kwargs,
         )
-        self.VAT_module = VATModuleInterface(
-            {**VAT_params, **{"only_return_img": True}}
-        )
+        self.VAT_module = VATModuleInterface(VAT_params)
 
     def _trainer_specific_loss(
             self, tf1_images: Tensor, tf2_images: Tensor, head_name: str

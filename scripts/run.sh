@@ -12,18 +12,17 @@ set -e
 time=24
 
 declare -a StringArray=(
-"python -O main.py Config=config/config_MNIST.yaml Trainer.name=iicgeo Trainer.save_dir=update_imsat/mnist_1/iicgeo Trainer.max_epoch=1000" \
-"python -O main.py Config=config/config_MNIST.yaml Trainer.name=imsat Trainer.save_dir=update_imsat/mnist_1/imsat Trainer.max_epoch=1000" \
-"python -O main.py Config=config/config_MNIST.yaml Trainer.name=imsatvat Trainer.save_dir=update_imsat/mnist_1/imsatvat_0.25_MI_4 Trainer.max_epoch=1000 Trainer.VAT_params={eps:0.25} Trainer.MI_params={mu:4.0}" \
-"python -O main.py Config=config/config_MNIST.yaml Trainer.name=imsatvat Trainer.save_dir=update_imsat/mnist_1/imsatvat_01_MI_4 Trainer.max_epoch=1000 Trainer.VAT_params={eps:1} Trainer.MI_params={mu:4.0}" \
-"python -O main.py Config=config/config_MNIST.yaml Trainer.name=imsatvat Trainer.save_dir=update_imsat/mnist_1/imsatvat_2.5_MI_4 Trainer.max_epoch=1000 Trainer.VAT_params={eps:2.5} Trainer.MI_params={mu:4.0}" \
-"python -O main.py Config=config/config_MNIST.yaml Trainer.name=imsatvat Trainer.save_dir=update_imsat/mnist_1/imsatvat_05_MI_4 Trainer.max_epoch=1000 Trainer.VAT_params={eps:5} Trainer.MI_params={mu:4.0}" \
-"python -O main.py Config=config/config_MNIST.yaml Trainer.name=imsatvat Trainer.save_dir=update_imsat/mnist_1/imsatvat_10_MI_4 Trainer.max_epoch=1000 Trainer.VAT_params={eps:10} Trainer.MI_params={mu:4.0}" \
-"python -O main.py Config=config/config_MNIST.yaml Trainer.name=imsatvat Trainer.save_dir=update_imsat/mnist_1/imsatvat_0.25_MI_8 Trainer.max_epoch=1000 Trainer.VAT_params={eps:0.25} Trainer.MI_params={mu:8.0}" \
-"python -O main.py Config=config/config_MNIST.yaml Trainer.name=imsatvat Trainer.save_dir=update_imsat/mnist_1/imsatvat_01_MI_8 Trainer.max_epoch=1000 Trainer.VAT_params={eps:1} Trainer.MI_params={mu:8.0}" \
-"python -O main.py Config=config/config_MNIST.yaml Trainer.name=imsatvat Trainer.save_dir=update_imsat/mnist_1/imsatvat_2.5_MI_8 Trainer.max_epoch=1000 Trainer.VAT_params={eps:2.5} Trainer.MI_params={mu:8.0}" \
-"python -O main.py Config=config/config_MNIST.yaml Trainer.name=imsatvat Trainer.save_dir=update_imsat/mnist_1/imsatvat_05_MI_8 Trainer.max_epoch=1000 Trainer.VAT_params={eps:5} Trainer.MI_params={mu:8.0}" \
-"python -O main.py Config=config/config_MNIST.yaml Trainer.name=imsatvat Trainer.save_dir=update_imsat/mnist_1/imsatvat_10_MI_8 Trainer.max_epoch=1000 Trainer.VAT_params={eps:10} Trainer.MI_params={mu:8.0}" \
+"python -O main.py Config=config/config_MNIST.yaml Trainer.name=iicgeo Trainer.save_dir=benchmark/mnist_1/iicgeo Trainer.max_epoch=1 Trainer.MI_params.mu=6.0 " \
+"python -O main.py Config=config/config_MNIST.yaml Trainer.name=iicmixup Trainer.save_dir=benchmark/mnist_1/iicmixup Trainer.max_epoch=1 Trainer.MI_params.mu=6.0 " \
+"python -O main.py Config=config/config_MNIST.yaml Trainer.name=iicvat Trainer.save_dir=benchmark/mnist_1/iicvat Trainer.max_epoch=1 Trainer.MI_params.mu=6.0 " \
+"python -O main.py Config=config/config_MNIST.yaml Trainer.name=iicgeovat Trainer.save_dir=benchmark/mnist_1/iicgeovat Trainer.max_epoch=1 Trainer.MI_params.mu=6.0 " \
+"python -O main.py Config=config/config_MNIST.yaml Trainer.name=imsat Trainer.save_dir=benchmark/mnist_1/imsat Trainer.max_epoch=1 Trainer.MI_params.mu=6.0 " \
+"python -O main.py Config=config/config_MNIST.yaml Trainer.name=imsatvat Trainer.save_dir=benchmark/mnist_1/imsatvat Trainer.max_epoch=1 Trainer.MI_params.mu=6.0 " \
+"python -O main.py Config=config/config_MNIST.yaml Trainer.name=imsatmixup Trainer.save_dir=benchmark/mnist_1/imsatmixup Trainer.max_epoch=1 Trainer.MI_params.mu=6.0 " \
+"python -O main.py Config=config/config_MNIST.yaml Trainer.name=imsatvatmixup Trainer.save_dir=benchmark/mnist_1/imsatvatmixup Trainer.max_epoch=1 Trainer.MI_params.mu=6.0 " \
+"python -O main.py Config=config/config_MNIST.yaml Trainer.name=imsatvatgeo Trainer.save_dir=benchmark/mnist_1/imsatvatgeo Trainer.max_epoch=1 Trainer.MI_params.mu=6.0 " \
+"python -O main.py Config=config/config_MNIST.yaml Trainer.name=imsatvatgeomixup Trainer.save_dir=benchmark/mnist_1/imsatvatgeomixup Trainer.max_epoch=1 Trainer.MI_params.mu=6.0 " \
+
 )
 #
 for cmd in "${StringArray[@]}"

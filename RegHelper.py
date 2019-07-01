@@ -186,6 +186,7 @@ class MixUp(object):
         assert mixup_label.shape == pred2.shape
         assert mixup_index.shape[0] == bn
         assert simplex(mixup_index)
+        assert simplex(mixup_label)
 
         return mixup_img, mixup_label.detach(), mixup_index
 

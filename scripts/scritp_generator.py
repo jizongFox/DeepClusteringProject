@@ -3,29 +3,30 @@ from pprint import pprint
 
 OPTIMIZED = True
 RESUME = False
-max_epoch = 100
+max_epoch = 500
 basic_cmd = (
     lambda config, trainer_name,
-           save_dir: f"python {'-O' if OPTIMIZED else ''} main.py Config={config} Trainer.name={trainer_name} Trainer.save_dir={save_dir} Trainer.max_epoch={max_epoch}"
+           save_dir: f"python {'-O' if OPTIMIZED else ''} main.py Config={config} Trainer.name={trainer_name} Trainer.save_dir=benchmark/{save_dir} Trainer.max_epoch={max_epoch} Trainer.MI_params.mu=6.0"
     if not RESUME
     else f"python {'-OO' if OPTIMIZED else ''} main.py Config={config} Trainer.name={trainer_name} Trainer.save_dir={save_dir} Trainer.checkpoint_path=runs/{save_dir} Trainer.max_epoch={max_epoch}"
 )
 
 trainer_names = [
     "iicgeo",
-    # "iicmixup",
-    # "iicvat",
-    # "iicgeovat",
+    "iicmixup",
+    "iicvat",
+    "iicgeovat",
     "imsat",
     "imsatvat",
-    # "imsatmixup",
+    "imsatmixup",
+    "imsatvatmixup",
     "imsatvatgeo",
-    # "imsatvatgeomixup"
+    "imsatvatgeomixup",
 ]
 save_dirs = trainer_names
 # datasets = ["mnist", "cifar", "svhn"]
 datasets = ["mnist"]
-randoms = [1]
+randoms = [5]
 randoms = list(range(1, randoms[0] + 1))
 cmds = []
 
@@ -39,7 +40,7 @@ for dataset, (trainername, save_dir), rand in product(
             "/".join([dataset + "_" + str(rand), save_dir]),
         )
     )
-cmds = ['"' + item + '" \ ' for item in cmds]
+cmds = ['"' + item + '" \\' for item in cmds]
 # cmds = '\n'.join(cmds)
 pprint(cmds, width=120)
 with open("cmds.txt", "w") as f:

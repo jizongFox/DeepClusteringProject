@@ -107,6 +107,7 @@ def get_trainer(
         "imsat": trainer.IMSATAbstractTrainer,  # imsat without any regularization
         "imsatvat": trainer.IMSATVATTrainer,
         "imsatmixup": trainer.IMSATMixupTrainer,
+        "imsatvatmixup": trainer.IMSATVATMixupTrainer,
         "imsatvatgeo": trainer.IMSATVATGeoTrainer,
         "imsatvatgeomixup": trainer.IMSATVATGeoMixupTrainer,
     }
