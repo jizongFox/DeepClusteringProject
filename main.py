@@ -2,9 +2,14 @@ from pathlib import Path
 from pprint import pprint
 from typing import Dict, Union, Type, Tuple
 
+from deepclustering.arch import _register_arch
 from deepclustering.manager import ConfigManger
 from deepclustering.model import Model, to_Apex
 from torch.utils.data import DataLoader
+
+from resnet_50 import ResNet50
+
+_register_arch("resnet50", ResNet50)
 
 import ClusteringGeneralTrainer as trainer
 
