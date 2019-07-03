@@ -12,16 +12,16 @@ basic_cmd = (
 )
 
 trainer_names = [
-    "iicgeo",
-    "iicmixup",
-    "iicvat",
-    "iicgeovat",
-    "imsat",
+    # "iicgeo",
+    # "iicmixup",
+    # "iicvat",
+    # "iicgeovat",
+    # "imsat",
     "imsatvat",
-    "imsatmixup",
-    "imsatvatmixup",
-    "imsatvatgeo",
-    "imsatvatgeomixup",
+    # "imsatmixup",
+    # "imsatvatmixup",
+    # "imsatvatgeo",
+    # "imsatvatgeomixup",
 ]
 save_dirs = trainer_names
 # datasets = ["mnist", "cifar", "svhn"]

@@ -4,15 +4,12 @@ from typing import Dict, Union, Type, Tuple
 
 from deepclustering.manager import ConfigManger
 from deepclustering.model import Model, to_Apex
-from deepclustering.utils import fix_all_seed
 from torch.utils.data import DataLoader
 
 import ClusteringGeneralTrainer as trainer
 
 DATA_PATH = Path(".data")
 DATA_PATH.mkdir(exist_ok=True)
-
-fix_all_seed(2)
 
 
 def get_dataloader(
