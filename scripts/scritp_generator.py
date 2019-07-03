@@ -25,8 +25,8 @@ trainer_names = [
 ]
 save_dirs = trainer_names
 # datasets = ["mnist", "cifar", "svhn"]
-datasets = ["mnist"]
-randoms = [5]
+datasets = ["cifar"]
+randoms = [1]
 randoms = list(range(1, randoms[0] + 1))
 cmds = []
 
