@@ -1,6 +1,6 @@
 Arch:
-  name: clusternet5gTwoHead
-  num_channel: 2
+  name: resnet50
+  num_channel: 1
   output_k_A: 70
   output_k_B: 10
   num_sub_heads: 1
@@ -26,5 +26,5 @@ Trainer:
   device: cuda
   head_control_params:
     B: 1
-  use_sobel: true
+  use_sobel: false
 

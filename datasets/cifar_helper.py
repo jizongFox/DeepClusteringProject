@@ -163,19 +163,19 @@ strong_transform_dict = {
 
 basic_transform_dict = {
     "tf1": {
-        "CenterCrop": {"size": (20, 20)},
-        "Resize": {"size": (32, 32), "interpolation": 0},
         "Img2Tensor": {"include_rgb": False, "include_grey": True},
     },
     "tf2": {
-        "randomcrop": {"size": (20, 20)},
-        "Resize": {"size": (32, 32), "interpolation": 0},
         "RandomHorizontalFlip": {"p": 0.5},
+        "ColorJitter": {
+            "brightness": [0.6, 1.4],
+            "contrast": [0.6, 1.4],
+            "saturation": [0.6, 1.4],
+            "hue": [-0.125, 0.125],
+        },
         "Img2Tensor": {"include_rgb": False, "include_grey": True},
     },
     "tf3": {
-        "CenterCrop": {"size": (20, 20)},
-        "Resize": {"size": (32, 32), "interpolation": 0},
         "Img2Tensor": {"include_rgb": False, "include_grey": True},
     },
 }
