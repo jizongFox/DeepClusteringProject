@@ -1,6 +1,6 @@
 Arch:
-  name: resnet50
-  num_channel: 1
+  name: clusternet5gTwoHead
+  num_channel: 2
   output_k_A: 70
   output_k_B: 10
   num_sub_heads: 1
@@ -8,7 +8,7 @@ Arch:
 
 Optim:
   name: Adam
-  lr: 0.005
+  lr: 0.0001
 
 Scheduler:
   name: MultiStepLR
@@ -26,5 +26,5 @@ Trainer:
   device: cuda
   head_control_params:
     B: 1
-  use_sobel: false
+  use_sobel: true
 

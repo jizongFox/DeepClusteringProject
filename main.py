@@ -27,7 +27,7 @@ def get_dataloader(
     """
     if config.get("Config", DEFAULT_CONFIG).split("_")[-1].lower() == "cifar.yaml":
         from datasets import (
-            default_cifar10_img_transform as img_transforms,
+            default_cifar10_strong_transform as img_transforms,
             Cifar10ClusteringDatasetInterface as DatasetInterface,
         )
         print("Checkout CIFAR10 dataset with transforms:")
