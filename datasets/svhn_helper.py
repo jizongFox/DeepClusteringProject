@@ -15,13 +15,13 @@ class SVHNClusteringDatasetInterface(ClusterDatasetInterface):
     ALLOWED_SPLIT = ["train", "test"]
 
     def __init__(
-            self,
-            data_root=None,
-            split_partitions: List[str] = [],
-            batch_size: int = 1,
-            shuffle: bool = False,
-            num_workers: int = 1,
-            pin_memory: bool = True,
+        self,
+        data_root=None,
+        split_partitions: List[str] = [],
+        batch_size: int = 1,
+        shuffle: bool = False,
+        num_workers: int = 1,
+        pin_memory: bool = True,
     ) -> None:
         super().__init__(
             SVHN,
@@ -34,14 +34,14 @@ class SVHNClusteringDatasetInterface(ClusterDatasetInterface):
         )
 
     def _creat_concatDataset(
-            self,
-            image_transform: Callable,
-            target_transform: Callable,
-            dataset_dict: dict = {},
+        self,
+        image_transform: Callable,
+        target_transform: Callable,
+        dataset_dict: dict = {},
     ):
         for split in self.split_partitions:
             assert (
-                    split in self.ALLOWED_SPLIT
+                split in self.ALLOWED_SPLIT
             ), f"Allowed split in SVHN:{self.ALLOWED_SPLIT}, given {split}."
 
         _datasets = []

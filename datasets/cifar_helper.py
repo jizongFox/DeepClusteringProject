@@ -26,13 +26,13 @@ class Cifar10ClusteringDatasetInterface(ClusterDatasetInterface):
     ALLOWED_SPLIT = ["train", "val"]
 
     def __init__(
-            self,
-            data_root=None,
-            split_partitions: List[str] = ["train", "val"],
-            batch_size: int = 1,
-            shuffle: bool = False,
-            num_workers: int = 1,
-            pin_memory: bool = True,
+        self,
+        data_root=None,
+        split_partitions: List[str] = ["train", "val"],
+        batch_size: int = 1,
+        shuffle: bool = False,
+        num_workers: int = 1,
+        pin_memory: bool = True,
     ) -> None:
         super().__init__(
             CIFAR10,
@@ -45,14 +45,14 @@ class Cifar10ClusteringDatasetInterface(ClusterDatasetInterface):
         )
 
     def _creat_concatDataset(
-            self,
-            image_transform: Callable,
-            target_transform: Callable,
-            dataset_dict: dict = {},
+        self,
+        image_transform: Callable,
+        target_transform: Callable,
+        dataset_dict: dict = {},
     ):
         for split in self.split_partitions:
             assert (
-                    split in self.ALLOWED_SPLIT
+                split in self.ALLOWED_SPLIT
             ), f"Allowed split in cifar-10:{self.ALLOWED_SPLIT}, given {split}."
 
         _datasets = []
@@ -72,13 +72,13 @@ class Cifar10ClusteringDatasetInterface(ClusterDatasetInterface):
 
 class Cifar10SemiSupervisedDatasetInterface(SemiDatasetInterface):
     def __init__(
-            self,
-            data_root=None,
-            labeled_sample_num: int = 4000,
-            img_transformation: Callable = None,
-            target_transformation: Callable = None,
-            *args,
-            **kwargs,
+        self,
+        data_root=None,
+        labeled_sample_num: int = 4000,
+        img_transformation: Callable = None,
+        target_transformation: Callable = None,
+        *args,
+        **kwargs,
     ) -> None:
         super().__init__(
             CIFAR10,
@@ -91,7 +91,7 @@ class Cifar10SemiSupervisedDatasetInterface(SemiDatasetInterface):
         )
 
     def _init_train_and_test_test(
-            self, transform, target_transform, *args, **kwargs
+        self, transform, target_transform, *args, **kwargs
     ) -> Tuple[Dataset, Dataset]:
         super()._init_train_and_test_test(transform, target_transform, *args, **kwargs)
         train_set = self.DataClass(
@@ -162,9 +162,7 @@ strong_transform_dict = {
 }
 
 basic_transform_dict = {
-    "tf1": {
-        "Img2Tensor": {"include_rgb": False, "include_grey": True},
-    },
+    "tf1": {"Img2Tensor": {"include_rgb": False, "include_grey": True}},
     "tf2": {
         "RandomHorizontalFlip": {"p": 0.5},
         "ColorJitter": {
@@ -175,9 +173,7 @@ basic_transform_dict = {
         },
         "Img2Tensor": {"include_rgb": False, "include_grey": True},
     },
-    "tf3": {
-        "Img2Tensor": {"include_rgb": False, "include_grey": True},
-    },
+    "tf3": {"Img2Tensor": {"include_rgb": False, "include_grey": True}},
 }
 default_cifar10_img_transform = {}
 for k, v in basic_transform_dict.items():

@@ -4,7 +4,6 @@ from torchvision.models import resnet18
 
 
 class Identical(nn.Module):
-
     def __init__(self):
         super().__init__()
 
@@ -13,16 +12,12 @@ class Identical(nn.Module):
 
 
 class ResNetHead(nn.Module):
-
     def __init__(self, num_sub_heads, output_k):
         super().__init__()
         self.num_sub_heads = num_sub_heads
         self.heads = nn.ModuleList(
             [
-                nn.Sequential(
-                    nn.Linear(512, output_k),
-                    nn.Softmax(dim=1),
-                )
+                nn.Sequential(nn.Linear(512, output_k), nn.Softmax(dim=1))
                 for _ in range(self.num_sub_heads)
             ]
         )
@@ -35,8 +30,15 @@ class ResNetHead(nn.Module):
 
 
 class ResNet50(nn.Module):
-    def __init__(self, num_channel=3, num_sub_heads=5, output_k_A=70,
-                 output_k_B=10, *args, **kwargs):
+    def __init__(
+        self,
+        num_channel=3,
+        num_sub_heads=5,
+        output_k_A=70,
+        output_k_B=10,
+        *args,
+        **kwargs
+    ):
         _warnings(args, kwargs)
         super().__init__()
         self.input_convert = nn.Conv2d(num_channel, 3, kernel_size=3, padding=1)
@@ -52,6 +54,6 @@ class ResNet50(nn.Module):
             return self.head_B(self.resnet(self.input_convert(input)))
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     resnet = resnet50(pretrained=True)
     print()

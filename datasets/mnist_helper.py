@@ -2,7 +2,7 @@ __all__ = [
     "MNISTClusteringDatasetInterface",
     "MNISTSemiSupervisedDatasetInterface",
     "default_mnist_img_transform",
-    "default_mnist_strong_transform"
+    "default_mnist_strong_transform",
 ]
 from functools import reduce
 from typing import *
@@ -25,14 +25,14 @@ class MNISTClusteringDatasetInterface(ClusterDatasetInterface):
     ALLOWED_SPLIT = ["train", "val"]
 
     def __init__(
-            self,
-            data_root=None,
-            split_partitions: List[str] = ["train", "val"],
-            batch_size: int = 1,
-            shuffle: bool = False,
-            num_workers: int = 1,
-            pin_memory: bool = True,
-            drop_last=False,
+        self,
+        data_root=None,
+        split_partitions: List[str] = ["train", "val"],
+        batch_size: int = 1,
+        shuffle: bool = False,
+        num_workers: int = 1,
+        pin_memory: bool = True,
+        drop_last=False,
     ) -> None:
         super().__init__(
             MNIST,
@@ -46,14 +46,14 @@ class MNISTClusteringDatasetInterface(ClusterDatasetInterface):
         )
 
     def _creat_concatDataset(
-            self,
-            image_transform: Callable,
-            target_transform: Callable,
-            dataset_dict: dict = {},
+        self,
+        image_transform: Callable,
+        target_transform: Callable,
+        dataset_dict: dict = {},
     ):
         for split in self.split_partitions:
             assert (
-                    split in self.ALLOWED_SPLIT
+                split in self.ALLOWED_SPLIT
             ), f"Allowed split in MNIST-10:{self.ALLOWED_SPLIT}, given {split}."
 
         _datasets = []
@@ -73,13 +73,13 @@ class MNISTClusteringDatasetInterface(ClusterDatasetInterface):
 
 class MNISTSemiSupervisedDatasetInterface(SemiDatasetInterface):
     def __init__(
-            self,
-            data_root: str = None,
-            labeled_sample_num: int = 100,
-            img_transformation: Callable = None,
-            target_transformation: Callable = None,
-            *args,
-            **kwargs,
+        self,
+        data_root: str = None,
+        labeled_sample_num: int = 100,
+        img_transformation: Callable = None,
+        target_transformation: Callable = None,
+        *args,
+        **kwargs,
     ) -> None:
         super().__init__(
             MNIST,
@@ -92,7 +92,7 @@ class MNISTSemiSupervisedDatasetInterface(SemiDatasetInterface):
         )
 
     def _init_train_and_test_test(
-            self, transform, target_transform, *args, **kwargs
+        self, transform, target_transform, *args, **kwargs
     ) -> Tuple[Dataset, Dataset]:
         train_set = self.DataClass(
             self.data_root,
@@ -117,12 +117,7 @@ class MNISTSemiSupervisedDatasetInterface(SemiDatasetInterface):
 
 default_mnist_img_transform = {
     # output shape would be 28*28
-
-    "tf1": transforms.Compose(
-        [
-            transforms.ToTensor(),
-        ]
-    ),
+    "tf1": transforms.Compose([transforms.ToTensor()]),
     "tf2": transforms.Compose(
         [
             pil_augment.RandomCrop((28, 28), padding=2),
@@ -135,11 +130,7 @@ default_mnist_img_transform = {
             transforms.ToTensor(),
         ]
     ),
-    "tf3": transforms.Compose(
-        [
-            transforms.ToTensor(),
-        ]
-    ),
+    "tf3": transforms.Compose([transforms.ToTensor()]),
 }
 
 default_mnist_strong_transform = {
