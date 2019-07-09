@@ -1,5 +1,6 @@
 from typing import Dict, Union, Type, Tuple
-
+import sys
+sys.path.insert(0,"../")
 from deepclustering.manager import ConfigManger
 from deepclustering.model import Model, to_Apex
 from deepclustering.utils import Identical, fix_all_seed
@@ -9,7 +10,7 @@ import ClusteringGeneralTrainer as trainer
 from baseline_cifar.cifarDataset import Cifar10FeatureClusteringInterface
 
 DATA_PATH = "../.data/cifar_features.pth"
-fix_all_seed(0)
+fix_all_seed(1)
 
 
 def get_dataloader(
