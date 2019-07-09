@@ -324,7 +324,6 @@ class IMSATMixupTrainer(IMSATVATTrainer):
         print("Override VAT module.")
         self.reg_module = MixUp(device=self.device, num_classes=self.model.arch_dict["output_k_B"])
         self.METERINTERFACE.register_new_meter("train_mixup", AverageValueMeter())
-        self.drawer.columns_to_draw.pop("train_adv_mean")
         self.drawer.columns_to_draw.insert(-1, "train_mixup_mean")
 
     @property

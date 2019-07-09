@@ -257,36 +257,14 @@ class IICMixupTrainer(IICGeoTrainer):
         return batch_loss
 
 
-class IICGeoVATMixupTrainer(IICGeoTrainer):
-    def __init__(
-            self,
-            model: Model,
-            train_loader_A: DataLoader,
-            train_loader_B: DataLoader,
-            val_loader: DataLoader,
-            max_epoch: int = 100,
-            save_dir: str = "IICVATMixupTrainer",
-            checkpoint_path: str = None,
-            device="cpu",
-            head_control_params: Dict[str, int] = {"B": 1},
-            use_sobel: bool = False,
-            config: dict = None,
-            **kwargs,
-    ) -> None:
-        super().__init__(
-            model,
-            train_loader_A,
-            train_loader_B,
-            val_loader,
-            max_epoch,
-            save_dir,
-            checkpoint_path,
-            device,
-            head_control_params,
-            use_sobel,
-            config,
-            **kwargs,
-        )
+class IICGeoVATMixupTrainer(IICGeoVATTrainer):
+
+    def __init__(self, model: Model, train_loader_A: DataLoader, train_loader_B: DataLoader, val_loader: DataLoader,
+                 max_epoch: int = 100, save_dir: str = "IICTrainer", checkpoint_path: str = None, device="cpu",
+                 head_control_params: Dict[str, int] = {"B": 1}, use_sobel: bool = False, config: dict = None,
+                 VAT_params: Dict[str, Union[int, float, str]] = {"name": "kl"}, **kwargs) -> None:
+        super().__init__(model, train_loader_A, train_loader_B, val_loader, max_epoch, save_dir, checkpoint_path,
+                         device, head_control_params, use_sobel, config, VAT_params, **kwargs)
         self.mixup_module = MixUp(
             device=self.device, num_classes=self.model.arch_dict["output_k_B"]
         )
@@ -308,11 +286,13 @@ class IICGeoVATMixupTrainer(IICGeoTrainer):
             tf1_images.flip(0),
             F.softmax(torch.randn(tf1_images.size(0), 2, device=self.device), 1),
         )
+        assert (not tf1_images.requires_grad) and (not tf2_images.requires_grad)
         batch_loss = super()._trainer_specific_loss(tf1_images, tf2_images, head_name)
         return batch_loss
 
     def vat_loss(self, tf1_images: Tensor, tf2_images: Tensor, head_name: str):
         # just replace the tf2_image with VAT generated images
         _, tf2_images, _ = self.VAT_module(self.model.torchnet, tf1_images)
+        assert (not tf1_images.requires_grad) and (not tf2_images.requires_grad)
         batch_loss = super()._trainer_specific_loss(tf1_images, tf2_images, head_name)
         return batch_loss

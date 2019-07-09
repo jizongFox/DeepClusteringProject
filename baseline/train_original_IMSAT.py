@@ -9,7 +9,7 @@ from torch.utils.data import DataLoader
 
 # from trainer import ClusteringGeneralTrainer_backup as trainer
 import trainer
-from baseline_cifar.cifarDataset import Cifar10FeatureClusteringInterface
+from baseline.cifarDataset import Cifar10FeatureClusteringInterface
 
 DATA_PATH = "../.data/cifar_features.pth"
 fix_all_seed(1)
