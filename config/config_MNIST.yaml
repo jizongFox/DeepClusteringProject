@@ -30,6 +30,6 @@ Trainer:
     B: 1
     A: 0
   VAT_params:
-    eps: 12.5
+    eps: 10.0
 
 # for mnist dataset, imsat vat trainer VAT_params. eps should be greater than 10.

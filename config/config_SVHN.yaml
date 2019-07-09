@@ -9,7 +9,7 @@ Arch:
 
 Optim:
   name: Adam
-  lr: 0.0005
+  lr: 0.002
 
 Scheduler:
   name: MultiStepLR
@@ -23,7 +23,7 @@ DataLoader:
 
 Trainer:
   max_epoch: 1000
-  save_dir: multihead_cifar
+  save_dir: multihead_SVHN
   device: cuda
   head_control_params:
     B: 1

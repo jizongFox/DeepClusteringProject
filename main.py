@@ -135,7 +135,7 @@ model = to_Apex(model, opt_level=None, verbosity=0)
 
 Trainer = get_trainer(merged_config)
 
-trainer = Trainer(
+clusteringTrainer = Trainer(
     model=model,
     train_loader_A=train_loader_A,
     train_loader_B=train_loader_B,
@@ -143,5 +143,4 @@ trainer = Trainer(
     config=merged_config,
     **merged_config["Trainer"]
 )
-trainer.start_training()
-trainer.clean_up()
+clusteringTrainer.start_training()

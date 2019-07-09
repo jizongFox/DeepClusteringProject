@@ -136,7 +136,7 @@ tf3=Compose(
     )
 """
 # convert to dictionary configuration:
-transform_dict = {
+strong_transform_dict = {
     "tf1": {
         "randomcrop": {"size": (20, 20)},
         "Resize": {"size": (32, 32), "interpolation": 0},
@@ -160,6 +160,25 @@ transform_dict = {
         "Img2Tensor": {"include_rgb": False, "include_grey": True},
     },
 }
+
+basic_transform_dict = {
+    "tf1": {"Img2Tensor": {"include_rgb": False, "include_grey": True}},
+    "tf2": {
+        "RandomHorizontalFlip": {"p": 0.5},
+        "ColorJitter": {
+            "brightness": [0.6, 1.4],
+            "contrast": [0.6, 1.4],
+            "saturation": [0.6, 1.4],
+            "hue": [-0.125, 0.125],
+        },
+        "Img2Tensor": {"include_rgb": False, "include_grey": True},
+    },
+    "tf3": {"Img2Tensor": {"include_rgb": False, "include_grey": True}},
+}
 default_cifar10_img_transform = {}
-for k, v in transform_dict.items():
+for k, v in basic_transform_dict.items():
     default_cifar10_img_transform[k] = TransformInterface(v)
+
+default_cifar10_strong_transform = {}
+for k, v in strong_transform_dict.items():
+    default_cifar10_strong_transform[k] = TransformInterface(v)

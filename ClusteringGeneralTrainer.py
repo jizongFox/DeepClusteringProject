@@ -15,7 +15,14 @@ from deepclustering.loss.loss import KL_div
 from deepclustering.meters import AverageValueMeter, MeterInterface
 from deepclustering.model import Model, ZeroGradientBackwardStep
 from deepclustering.trainer import _Trainer
-from deepclustering.utils import tqdm_, simplex, tqdm, dict_filter, nice_dict, assert_list
+from deepclustering.utils import (
+    tqdm_,
+    simplex,
+    tqdm,
+    dict_filter,
+    nice_dict,
+    assert_list,
+)
 from deepclustering.utils.classification.assignment_mapping import (
     flat_acc,
     hungarian_match,
@@ -234,12 +241,12 @@ class ClusteringGeneralTrainer(_Trainer):
             if self.use_sobel:
                 images = self.sobel(images)
             _pred = self.model.torchnet(images, head="B")
+            assert assert_list(simplex, _pred), "pred should be a list of simplexes."
             assert _pred.__len__() == self.model.arch_dict["num_sub_heads"]
-            assert simplex(_pred[0]), f"pred should be normalized, given {_pred[0]}."
             bSlicer = slice(slice_done, slice_done + images.shape[0])
             for subhead in range(self.model.arch_dict["num_sub_heads"]):
                 preds[subhead][bSlicer] = _pred[subhead].max(1)[1]
-                target[bSlicer] = gt
+            target[bSlicer] = gt
 
             slice_done += gt.shape[0]
         assert slice_done == val_loader.dataset.__len__(), "Slice not completed."
@@ -280,10 +287,22 @@ class IMSATAbstractTrainer(ClusteringGeneralTrainer):
     In IMSAT, the loss usually only takes the basic transformed image tf1 without touching tf2
     """
 
-    def __init__(self, model: Model, train_loader_A: DataLoader, train_loader_B: DataLoader, val_loader: DataLoader,
-                 max_epoch: int = 100, save_dir: str = "IMSATAbstractTrainer", checkpoint_path: str = None,
-                 device="cpu", head_control_params: Dict[str, int] = {"B": 1}, use_sobel: bool = False,
-                 config: dict = None, MI_params: dict = {}, **kwargs) -> None:
+    def __init__(
+            self,
+            model: Model,
+            train_loader_A: DataLoader,
+            train_loader_B: DataLoader,
+            val_loader: DataLoader,
+            max_epoch: int = 100,
+            save_dir: str = "IMSATAbstractTrainer",
+            checkpoint_path: str = None,
+            device="cpu",
+            head_control_params: Dict[str, int] = {"B": 1},
+            use_sobel: bool = False,
+            config: dict = None,
+            MI_params: dict = {},
+            **kwargs,
+    ) -> None:
         super().__init__(
             model,
             train_loader_A,
@@ -307,9 +326,11 @@ class IMSATAbstractTrainer(ClusteringGeneralTrainer):
         self.METERINTERFACE.register_new_meter("train_mi", AverageValueMeter())
         self.METERINTERFACE.register_new_meter("train_entropy", AverageValueMeter())
         self.METERINTERFACE.register_new_meter("train_centropy", AverageValueMeter())
-        colum_to_draw = ["train_mi_mean",
-                         "train_entropy_mean",
-                         "train_centropy_mean"] + colum_to_draw  # type: ignore
+        colum_to_draw = [
+                            "train_mi_mean",
+                            "train_entropy_mean",
+                            "train_centropy_mean",
+                        ] + colum_to_draw  # type: ignore
         return colum_to_draw
 
     @property
@@ -330,8 +351,7 @@ class IMSATAbstractTrainer(ClusteringGeneralTrainer):
         # only tf1_images are needed
         tf1_images = tf1_images.to(self.device)
         tf1_pred_simplex = self.model.torchnet(tf1_images, head=head_name)
-        # tf2_pred_simplex = self.model.torchnet(tf2_images, head=head_name)
-        # assert simplex(tf1_pred_simplex[0]) and tf1_pred_simplex.__len__() == tf2_pred_simplex.__len__()
+        assert assert_list(simplex, tf1_pred_simplex), "Prediction must be a list of simplexes."
         batch_loss: List[torch.Tensor] = []  # type: ignore
         entropies: List[torch.Tensor] = []
         centropies: List[torch.Tensor] = []
@@ -365,20 +385,43 @@ class IMSATVATTrainer(IMSATAbstractTrainer):
     You will never use mi in IMSAT framework.
     """
 
-    def __init__(self, model: Model, train_loader_A: DataLoader, train_loader_B: DataLoader, val_loader: DataLoader,
-                 max_epoch: int = 100, save_dir: str = "IMSATAbstractTrainer", checkpoint_path: str = None,
-                 device="cpu", head_control_params: Dict[str, int] = {"B": 1}, use_sobel: bool = False,
-                 config: Dict[str, Union[int, float, str, Dict[str, Any]]] = None,
-                 MI_params: Dict[str, Union[int, float, str]] = {},
-                 VAT_params: Dict[str, Union[int, float, str]] = {},
-                 **kwargs: Dict[str, Union[int, float, str]]) -> None:
+    def __init__(
+            self,
+            model: Model,
+            train_loader_A: DataLoader,
+            train_loader_B: DataLoader,
+            val_loader: DataLoader,
+            max_epoch: int = 100,
+            save_dir: str = "IMSATAbstractTrainer",
+            checkpoint_path: str = None,
+            device="cpu",
+            head_control_params: Dict[str, int] = {"B": 1},
+            use_sobel: bool = False,
+            config: Dict[str, Union[int, float, str, Dict[str, Any]]] = None,
+            MI_params: Dict[str, Union[int, float, str]] = {},
+            VAT_params: Dict[str, Union[int, float, str]] = {},
+            **kwargs: Dict[str, Union[int, float, str]],
+    ) -> None:
         if VAT_params.get("name"):
             assert VAT_params.get("name") == "kl", (
                 f"In IMSAT framework, KL distance is the only to be supported, "
                 f"given {VAT_params.get('name')}."
             )
-        super().__init__(model, train_loader_A, train_loader_B, val_loader, max_epoch, save_dir, checkpoint_path,
-                         device, head_control_params, use_sobel, config, MI_params, **kwargs)
+        super().__init__(
+            model,
+            train_loader_A,
+            train_loader_B,
+            val_loader,
+            max_epoch,
+            save_dir,
+            checkpoint_path,
+            device,
+            head_control_params,
+            use_sobel,
+            config,
+            MI_params,
+            **kwargs,
+        )
         self.reg_module = VATModuleInterface(VAT_params)
 
     def __init_meters__(self) -> List[Union[str, List[str]]]:
@@ -390,9 +433,7 @@ class IMSATVATTrainer(IMSATAbstractTrainer):
     @property
     def _training_report_dict(self):
         report_dict = super()._training_report_dict
-        report_dict.update(
-            {"adv": self.METERINTERFACE["train_adv"].summary()["mean"]}
-        )
+        report_dict.update({"adv": self.METERINTERFACE["train_adv"].summary()["mean"]})
         return dict_filter(report_dict)
 
     def _regulaze(
@@ -416,7 +457,6 @@ class IMSATVATTrainer(IMSATAbstractTrainer):
 
 
 class IMSATVATGeoTrainer(IMSATVATTrainer):
-
     def __init_meters__(self) -> List[Union[str, List[str]]]:
         columns = super().__init_meters__()
         self.METERINTERFACE.register_new_meter("train_geo", AverageValueMeter())
@@ -425,9 +465,7 @@ class IMSATVATGeoTrainer(IMSATVATTrainer):
     @property
     def _training_report_dict(self):
         report_dict = super()._training_report_dict
-        report_dict.update(
-            {"geo": self.METERINTERFACE["train_geo"].summary()["mean"]}
-        )
+        report_dict.update({"geo": self.METERINTERFACE["train_geo"].summary()["mean"]})
         return dict_filter(report_dict)
 
     def _regulaze(
@@ -441,10 +479,14 @@ class IMSATVATGeoTrainer(IMSATVATTrainer):
 
         tf_images = tf_images.to(self.device)
         tf_pred_simplex = self.model.torchnet(tf_images, head=head_name)
-        assert assert_list(simplex, tf_pred_simplex) and len(tf_pred_simplex) == len(img_pred_simplex)
+        assert assert_list(simplex, tf_pred_simplex) and len(tf_pred_simplex) == len(
+            img_pred_simplex
+        )
         # kl div:
         geo_losses: List[Tensor] = []
-        for subhead, (tf1_pred, tf2_pred) in enumerate(zip(img_pred_simplex, tf_pred_simplex)):
+        for subhead, (tf1_pred, tf2_pred) in enumerate(
+                zip(img_pred_simplex, tf_pred_simplex)
+        ):
             assert simplex(tf1_pred) and simplex(tf2_pred)
             geo_losses.append(self.kl_div(tf2_pred, tf1_pred.detach()))
         geo_losses: Tensor = sum(geo_losses) / len(geo_losses)
@@ -459,13 +501,37 @@ class IMSATMixupTrainer(IMSATVATTrainer):
     No VAT_params can be provided here.
     """
 
-    def __init__(self, model: Model, train_loader_A: DataLoader, train_loader_B: DataLoader, val_loader: DataLoader,
-                 max_epoch: int = 100, save_dir: str = "IMSATAbstractTrainer", checkpoint_path: str = None,
-                 device="cpu", head_control_params: Dict[str, int] = {"B": 1}, use_sobel: bool = False,
-                 config: Dict[str, Union[int, float, str, Dict[str, Any]]] = None,
-                 MI_params: Dict[str, Union[int, float, str]] = {}, **kwargs) -> None:
-        super().__init__(model, train_loader_A, train_loader_B, val_loader, max_epoch, save_dir, checkpoint_path,
-                         device, head_control_params, use_sobel, config, MI_params, **kwargs)
+    def __init__(
+            self,
+            model: Model,
+            train_loader_A: DataLoader,
+            train_loader_B: DataLoader,
+            val_loader: DataLoader,
+            max_epoch: int = 100,
+            save_dir: str = "IMSATAbstractTrainer",
+            checkpoint_path: str = None,
+            device="cpu",
+            head_control_params: Dict[str, int] = {"B": 1},
+            use_sobel: bool = False,
+            config: Dict[str, Union[int, float, str, Dict[str, Any]]] = None,
+            MI_params: Dict[str, Union[int, float, str]] = {},
+            **kwargs,
+    ) -> None:
+        super().__init__(
+            model,
+            train_loader_A,
+            train_loader_B,
+            val_loader,
+            max_epoch,
+            save_dir,
+            checkpoint_path,
+            device,
+            head_control_params,
+            use_sobel,
+            config,
+            MI_params,
+            **kwargs,
+        )
         # override the regularzation module
         print("Override VAT module.")
         self.reg_module = MixUp(
@@ -477,7 +543,9 @@ class IMSATMixupTrainer(IMSATVATTrainer):
     @property
     def _training_report_dict(self):
         report_dict = super()._training_report_dict
-        report_dict.update({"mixup": self.METERINTERFACE['train_mixup'].summary()["mean"]})
+        report_dict.update(
+            {"mixup": self.METERINTERFACE["train_mixup"].summary()["mean"]}
+        )
         return report_dict
 
     def _regulaze(
@@ -503,15 +571,39 @@ class IMSATMixupTrainer(IMSATVATTrainer):
 
 
 class IMSATVATMixupTrainer(IMSATVATTrainer):
-
-    def __init__(self, model: Model, train_loader_A: DataLoader, train_loader_B: DataLoader, val_loader: DataLoader,
-                 max_epoch: int = 100, save_dir: str = "IMSATVATMixupTrainer", checkpoint_path: str = None,
-                 device="cpu", head_control_params: Dict[str, int] = {"B": 1}, use_sobel: bool = False,
-                 config: Dict[str, Union[int, float, str, Dict[str, Any]]] = None,
-                 MI_params: Dict[str, Union[int, float, str]] = {}, VAT_params: Dict[str, Union[int, float, str]] = {},
-                 **kwargs: Dict[str, Union[int, float, str]]) -> None:
-        super().__init__(model, train_loader_A, train_loader_B, val_loader, max_epoch, save_dir, checkpoint_path,
-                         device, head_control_params, use_sobel, config, MI_params, VAT_params, **kwargs)
+    def __init__(
+            self,
+            model: Model,
+            train_loader_A: DataLoader,
+            train_loader_B: DataLoader,
+            val_loader: DataLoader,
+            max_epoch: int = 100,
+            save_dir: str = "IMSATVATMixupTrainer",
+            checkpoint_path: str = None,
+            device="cpu",
+            head_control_params: Dict[str, int] = {"B": 1},
+            use_sobel: bool = False,
+            config: Dict[str, Union[int, float, str, Dict[str, Any]]] = None,
+            MI_params: Dict[str, Union[int, float, str]] = {},
+            VAT_params: Dict[str, Union[int, float, str]] = {},
+            **kwargs: Dict[str, Union[int, float, str]],
+    ) -> None:
+        super().__init__(
+            model,
+            train_loader_A,
+            train_loader_B,
+            val_loader,
+            max_epoch,
+            save_dir,
+            checkpoint_path,
+            device,
+            head_control_params,
+            use_sobel,
+            config,
+            MI_params,
+            VAT_params,
+            **kwargs,
+        )
         self.mix_module = MixUp(
             device=self.device, num_classes=self.model.arch_dict["output_k_B"]
         )
@@ -521,7 +613,9 @@ class IMSATVATMixupTrainer(IMSATVATTrainer):
     @property
     def _training_report_dict(self):
         report_dict = super()._training_report_dict
-        report_dict.update({"mixup": self.METERINTERFACE['train_mixup'].summary()["mean"]})
+        report_dict.update(
+            {"mixup": self.METERINTERFACE["train_mixup"].summary()["mean"]}
+        )
         return report_dict
 
     def _regulaze(
@@ -548,14 +642,37 @@ class IMSATVATMixupTrainer(IMSATVATTrainer):
 
 
 class IMSATVATGeoMixupTrainer(IMSATVATGeoTrainer):
-    def __init__(self, model: Model, train_loader_A: DataLoader, train_loader_B: DataLoader, val_loader: DataLoader,
-                 max_epoch: int = 100, save_dir: str = "IMSATAbstractTrainer", checkpoint_path: str = None,
-                 device="cpu", head_control_params: Dict[str, int] = {"B": 1}, use_sobel: bool = False,
-                 config: Dict[str, Union[int, float, str, Dict[str, Any]]] = None,
-                 MI_params: Dict[str, Union[int, float, str]] = {},
-                 **kwargs: Dict[str, Union[int, float, str]]) -> None:
-        super().__init__(model, train_loader_A, train_loader_B, val_loader, max_epoch, save_dir, checkpoint_path,
-                         device, head_control_params, use_sobel, config, MI_params, **kwargs)
+    def __init__(
+            self,
+            model: Model,
+            train_loader_A: DataLoader,
+            train_loader_B: DataLoader,
+            val_loader: DataLoader,
+            max_epoch: int = 100,
+            save_dir: str = "IMSATAbstractTrainer",
+            checkpoint_path: str = None,
+            device="cpu",
+            head_control_params: Dict[str, int] = {"B": 1},
+            use_sobel: bool = False,
+            config: Dict[str, Union[int, float, str, Dict[str, Any]]] = None,
+            MI_params: Dict[str, Union[int, float, str]] = {},
+            **kwargs: Dict[str, Union[int, float, str]],
+    ) -> None:
+        super().__init__(
+            model,
+            train_loader_A,
+            train_loader_B,
+            val_loader,
+            max_epoch,
+            save_dir,
+            checkpoint_path,
+            device,
+            head_control_params,
+            use_sobel,
+            config,
+            MI_params,
+            **kwargs,
+        )
         self.mixup_module = MixUp(
             device=self.device, num_classes=self.model.arch_dict["output_k_B"]
         )
@@ -655,11 +772,17 @@ class IICGeoTrainer(ClusteringGeneralTrainer):
             self, tf1_images: Tensor, tf2_images: Tensor, head_name: str
     ):
         if self.device not in (tf1_images.device, tf2_images.device):
-            tf1_images, tf2_images = tf1_images.to(self.device), tf2_images.to(self.device)
+            tf1_images, tf2_images = (
+                tf1_images.to(self.device),
+                tf2_images.to(self.device),
+            )
         tf1_pred_simplex = self.model.torchnet(tf1_images, head=head_name)
         tf2_pred_simplex = self.model.torchnet(tf2_images, head=head_name)
-        assert assert_list(simplex, tf1_pred_simplex) and assert_list(simplex, tf2_pred_simplex) and \
-               tf1_pred_simplex.__len__() == tf2_pred_simplex.__len__(), f"Error on tf1 and tf2 predictions."
+        assert (
+                assert_list(simplex, tf1_pred_simplex)
+                and assert_list(simplex, tf2_pred_simplex)
+                and tf1_pred_simplex.__len__() == tf2_pred_simplex.__len__()
+        ), f"Error on tf1 and tf2 predictions."
 
         batch_loss: List[torch.Tensor] = []  # type: ignore
         for subhead in range(tf1_pred_simplex.__len__()):
@@ -668,7 +791,9 @@ class IICGeoTrainer(ClusteringGeneralTrainer):
             )
             batch_loss.append(_loss)
         batch_loss: torch.Tensor = sum(batch_loss) / len(batch_loss)  # type:ignore
-        self.METERINTERFACE[f"train_head_{head_name}"].add(-batch_loss.item())  # type: ignore
+        self.METERINTERFACE[f"train_head_{head_name}"].add(
+            -batch_loss.item()
+        )  # type: ignore
 
         return batch_loss
 
