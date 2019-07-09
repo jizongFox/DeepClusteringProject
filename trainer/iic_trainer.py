@@ -209,6 +209,7 @@ class IICMixupTrainer(IICGeoTrainer):
     """
     This trainer is to replace tf2_images by a mixup image
     """
+
     def __init__(
             self,
             model: Model,

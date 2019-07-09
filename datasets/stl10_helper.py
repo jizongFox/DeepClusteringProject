@@ -1,3 +1,5 @@
+__all__ = ["STL10ClusteringDatasetInterface", "stl10_strong_transform"]
+
 from functools import reduce
 from typing import List, Callable
 
@@ -7,20 +9,18 @@ from torchvision import transforms
 from .clustering_helper import ClusterDatasetInterface
 from .stl10 import STL10
 
-__all__ = ["STL10ClusteringDatasetInterface", "default_stl10_img_transform"]
-
 
 class STL10ClusteringDatasetInterface(ClusterDatasetInterface):
     ALLOWED_SPLIT = ["train", "test", "train+unlabeled"]
 
     def __init__(
-        self,
-        data_root=None,
-        split_partitions: List[str] = [],
-        batch_size: int = 1,
-        shuffle: bool = False,
-        num_workers: int = 1,
-        pin_memory: bool = True,
+            self,
+            data_root=None,
+            split_partitions: List[str] = [],
+            batch_size: int = 1,
+            shuffle: bool = False,
+            num_workers: int = 1,
+            pin_memory: bool = True,
     ) -> None:
         super().__init__(
             STL10,
@@ -33,14 +33,14 @@ class STL10ClusteringDatasetInterface(ClusterDatasetInterface):
         )
 
     def _creat_concatDataset(
-        self,
-        image_transform: Callable,
-        target_transform: Callable,
-        dataset_dict: dict = {},
+            self,
+            image_transform: Callable,
+            target_transform: Callable,
+            dataset_dict: dict = {},
     ):
         for split in self.split_partitions:
             assert (
-                split in self.ALLOWED_SPLIT
+                    split in self.ALLOWED_SPLIT
             ), f"Allowed split in STL-10:{self.ALLOWED_SPLIT}, given {split}."
 
         _datasets = []
@@ -58,7 +58,8 @@ class STL10ClusteringDatasetInterface(ClusterDatasetInterface):
         return serial_dataset
 
 
-default_stl10_img_transform = {
+# ============================== public transform interface ================================
+stl10_strong_transform = {
     "tf1": transforms.Compose(
         [
             pil_augment.RandomCrop(size=(64, 64), padding=None),
@@ -88,3 +89,4 @@ default_stl10_img_transform = {
         ]
     ),
 }
+# ==========================================================================================
