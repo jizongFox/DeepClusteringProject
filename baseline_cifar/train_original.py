@@ -1,15 +1,15 @@
-from pathlib import Path
 from typing import Dict, Union, Type, Tuple
 
 from deepclustering.manager import ConfigManger
 from deepclustering.model import Model, to_Apex
-from deepclustering.utils import Identical
+from deepclustering.utils import Identical, fix_all_seed
 from torch.utils.data import DataLoader
 
 import ClusteringGeneralTrainer as trainer
-from baseline_cifar.cifar_feature import Cifar10FeatureClusteringInterface
+from baseline_cifar.cifarDataset import Cifar10FeatureClusteringInterface
 
-DATA_PATH = Path("../.data/cifar_features.pth")
+DATA_PATH = "../.data/cifar_features.pth"
+fix_all_seed(0)
 
 
 def get_dataloader(
@@ -23,8 +23,11 @@ def get_dataloader(
         "tf3": Identical(),
     }
 
-    cifar10_datahandler = Cifar10FeatureClusteringInterface(data_path=DATA_PATH, batch_size=batch_size, shuffle=shuffle,
-                                                            num_workers=num_workers)
+    cifar10_datahandler = Cifar10FeatureClusteringInterface(
+        data_path=str(DATA_PATH), batch_size=batch_size,
+        shuffle=shuffle,
+        num_workers=num_workers
+    )
 
     train_loader_A = cifar10_datahandler.ParallelDataLoader(tf_transforms["tf1"], tf_transforms["tf2"])
     train_loader_B = cifar10_datahandler.ParallelDataLoader(tf_transforms["tf1"], tf_transforms["tf2"])
@@ -38,16 +41,8 @@ def get_trainer(
 ) -> Type[trainer.ClusteringGeneralTrainer]:
     assert config.get("Trainer").get("name"), config.get("Trainer").get("name")
     trainer_mapping: Dict[str, Type[trainer.ClusteringGeneralTrainer]] = {
-        "iicgeo": trainer.IICGeoTrainer,  # the basic iic
-        "iicmixup": trainer.IICMixupTrainer,  # the basic IIC with mixup as the data augmentation
-        "iicvat": trainer.IICVATTrainer,  # the basic iic with VAT as the basic data augmentation
-        "iicgeovat": trainer.IICGeoVATTrainer,  # IIC with geo and vat as the data augmentation
         "imsat": trainer.IMSATAbstractTrainer,  # imsat without any regularization
         "imsatvat": trainer.IMSATVATTrainer,
-        "imsatmixup": trainer.IMSATMixupTrainer,
-        "imsatvatmixup": trainer.IMSATVATMixupTrainer,
-        "imsatvatgeo": trainer.IMSATVATGeoTrainer,
-        "imsatvatgeomixup": trainer.IMSATVATGeoMixupTrainer,
     }
     Trainer = trainer_mapping.get(config.get("Trainer").get("name").lower())
     assert Trainer, config.get("Trainer").get("name")

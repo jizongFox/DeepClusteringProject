@@ -205,7 +205,7 @@ class MixUp(object):
         return mixup_img, mixup_label.detach(), mixup_index
 
 
-@threaded(name="plot")
+@threaded(name="plot", daemon=False)
 def pred_histgram(tf_writter: SummaryWriter, preds: Tensor, epoch: int):
     num_subheads, num_elements = preds.shape
     preds = preds.cpu().numpy()

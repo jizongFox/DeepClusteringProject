@@ -1,6 +1,6 @@
 Arch:
   name: clusternetimsat
-  in_channel: 2048
+  in_channel: 2048 # feature size from resnet 50
   output_k_A: 70
   output_k_B: 10
   num_sub_heads: 1
@@ -11,7 +11,7 @@ Optim:
 
 Scheduler:
   name: MultiStepLR
-  milestones: [100, 200, 300, 400, 500, 600, 700, 800, 900]
+  milestones: [10, 20, 30, 50, 70]
   gamma: 0.75
 
 DataLoader:
@@ -20,7 +20,7 @@ DataLoader:
   num_workers: 16
 
 Trainer:
-  max_epoch: 1000
+  max_epoch: 80
   save_dir: baseline_cifar10
   device: cuda
   head_control_params:

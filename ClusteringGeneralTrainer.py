@@ -241,12 +241,12 @@ class ClusteringGeneralTrainer(_Trainer):
             if self.use_sobel:
                 images = self.sobel(images)
             _pred = self.model.torchnet(images, head="B")
+            assert assert_list(simplex, _pred), "pred should be a list of simplexes."
             assert _pred.__len__() == self.model.arch_dict["num_sub_heads"]
-            assert simplex(_pred[0]), f"pred should be normalized, given {_pred[0]}."
             bSlicer = slice(slice_done, slice_done + images.shape[0])
             for subhead in range(self.model.arch_dict["num_sub_heads"]):
                 preds[subhead][bSlicer] = _pred[subhead].max(1)[1]
-                target[bSlicer] = gt
+            target[bSlicer] = gt
 
             slice_done += gt.shape[0]
         assert slice_done == val_loader.dataset.__len__(), "Slice not completed."
@@ -351,8 +351,7 @@ class IMSATAbstractTrainer(ClusteringGeneralTrainer):
         # only tf1_images are needed
         tf1_images = tf1_images.to(self.device)
         tf1_pred_simplex = self.model.torchnet(tf1_images, head=head_name)
-        # tf2_pred_simplex = self.model.torchnet(tf2_images, head=head_name)
-        # assert simplex(tf1_pred_simplex[0]) and tf1_pred_simplex.__len__() == tf2_pred_simplex.__len__()
+        assert assert_list(simplex, tf1_pred_simplex), "Prediction must be a list of simplexes."
         batch_loss: List[torch.Tensor] = []  # type: ignore
         entropies: List[torch.Tensor] = []
         centropies: List[torch.Tensor] = []
