@@ -11,7 +11,7 @@ from resnet_50 import ResNet50
 
 _register_arch("resnet50", ResNet50)
 
-import ClusteringGeneralTrainer as trainer
+from trainer import __ClusteringGeneralTrainer_backup as trainer
 
 DATA_PATH = Path(".data")
 DATA_PATH.mkdir(exist_ok=True)

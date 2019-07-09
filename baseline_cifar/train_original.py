@@ -1,12 +1,14 @@
-from typing import Dict, Union, Type, Tuple
 import sys
-sys.path.insert(0,"../")
+from typing import Dict, Union, Type, Tuple
+
+sys.path.insert(0, "../")
 from deepclustering.manager import ConfigManger
 from deepclustering.model import Model, to_Apex
 from deepclustering.utils import Identical, fix_all_seed
 from torch.utils.data import DataLoader
 
-import ClusteringGeneralTrainer as trainer
+# from trainer import ClusteringGeneralTrainer_backup as trainer
+import trainer
 from baseline_cifar.cifarDataset import Cifar10FeatureClusteringInterface
 
 DATA_PATH = "../.data/cifar_features.pth"
