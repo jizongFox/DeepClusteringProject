@@ -134,7 +134,7 @@ basic_transform_dict = {
     "tf1": {"Img2Tensor": {"include_rgb": False, "include_grey": True}},
     "tf2": {
         "RandomHorizontalFlip": {"p": 0.5},
-        "RandomCrope": {"size": (32, 32), "padding": 2},
+        "RandomCrop": {"size": (32, 32), "padding": 2},
         "Img2Tensor": {"include_rgb": False, "include_grey": True},
     },
     "tf3": {"Img2Tensor": {"include_rgb": False, "include_grey": True}},

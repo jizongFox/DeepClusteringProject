@@ -194,7 +194,7 @@ class ClusteringGeneralTrainer(_Trainer):
                     # extract tf1_images, tf2_images and put then to self.device
                     tf1_images = torch.cat(tuple([images[0] for _ in range(len(images) - 1)]), dim=0).to(self.device)
                     tf2_images = torch.cat(tuple(images[1:]), dim=0).to(self.device)
-                    assert tf1_images.shape == tf2_images, f"`tf1_images` should have the same size as `tf2_images`," \
+                    assert tf1_images.shape == tf2_images.shape, f"`tf1_images` should have the same size as `tf2_images`," \
                         f"given {tf1_images.shape} and {tf2_images.shape}."
                     # if images are processed with sobel filters
                     if self.use_sobel:
@@ -296,4 +296,4 @@ class ClusteringGeneralTrainer(_Trainer):
         :return: loss tensor to call .backward()
         """
 
-    raise NotImplementedError
+        raise NotImplementedError

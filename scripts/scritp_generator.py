@@ -1,31 +1,33 @@
 from itertools import product
 from pprint import pprint
 
-OPTIMIZED = True
+OPTIMIZED = False
 RESUME = False
-max_epoch = 500
+save_folder = "test"
+max_epoch = 2
 basic_cmd = (
-    lambda config, trainer_name,
-           save_dir: f"python {'-O' if OPTIMIZED else ''} main.py Config={config} Trainer.name={trainer_name} Trainer.save_dir=benchmark/{save_dir} Trainer.max_epoch={max_epoch} Trainer.MI_params.mu=6.0"
+    lambda config, trainer_name, save_dir, seed:
+    f"python {'-O' if OPTIMIZED else ''} main.py Config={config} Trainer.name={trainer_name} Trainer.save_dir={save_folder}/{save_dir} Trainer.max_epoch={max_epoch} Seed={seed}"
     if not RESUME
     else f"python {'-OO' if OPTIMIZED else ''} main.py Config={config} Trainer.name={trainer_name} Trainer.save_dir={save_dir} Trainer.checkpoint_path=runs/{save_dir} Trainer.max_epoch={max_epoch}"
 )
 
 trainer_names = [
-    # "iicgeo",
-    # "iicmixup",
-    # "iicvat",
-    # "iicgeovat",
-    # "imsat",
+    "iicgeo",
+    "iicmixup",
+    "iicvat",
+    "iicgeovat",
+    "iicgeovatmixup",
+    "imsat",
     "imsatvat",
-    # "imsatmixup",
-    # "imsatvatmixup",
-    # "imsatvatgeo",
-    # "imsatvatgeomixup",
+    "imsatmixup",
+    "imsatvatmixup",
+    "imsatvatgeo",
+    "imsatvatgeomixup",
 ]
 save_dirs = trainer_names
-# datasets = ["mnist", "cifar", "svhn"]
-datasets = ["cifar"]
+datasets = ["mnist", "cifar", "svhn"]
+datasets = ["mnist"]
 randoms = [1]
 randoms = list(range(1, randoms[0] + 1))
 cmds = []
@@ -38,6 +40,7 @@ for dataset, (trainername, save_dir), rand in product(
             "config/config_" + dataset.upper() + ".yaml",
             trainername,
             "/".join([dataset + "_" + str(rand), save_dir]),
+            rand
         )
     )
 cmds = ['"' + item + '" \\' for item in cmds]

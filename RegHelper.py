@@ -138,7 +138,7 @@ class VATLoss_Multihead(nn.Module):
                 adv_distance: List[Tensor] = list(map(lambda p_, p: self.distance_func(p_, p), pred_hat, pred))
                 _adv_distance: torch.Tensor = sum(adv_distance) / float(len(adv_distance))  # type: ignore
                 _adv_distance.backward()  # type: ignore
-                assert d.grad  # make sure d have a grad instead of None.
+                assert d.grad is not None  # make sure d have a grad instead of None.
                 d = _l2_normalize(d.grad)
 
             # calc LDS
