@@ -1,10 +1,9 @@
 Arch:
-  name: clusterimsat
-  num_channel: 1
+  name: clusternetimsat
+  in_channel: 2048
   output_k_A: 70
   output_k_B: 10
   num_sub_heads: 1
-  semisup: False
 
 Optim:
   name: Adam
@@ -16,13 +15,13 @@ Scheduler:
   gamma: 0.75
 
 DataLoader:
-  batch_size: 200
+  batch_size: 150
   shuffle: true
   num_workers: 16
 
 Trainer:
   max_epoch: 1000
-  save_dir: multihead_cifar
+  save_dir: baseline_cifar10
   device: cuda
   head_control_params:
     B: 1

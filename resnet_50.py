@@ -31,13 +31,13 @@ class ResNetHead(nn.Module):
 
 class ResNet50(nn.Module):
     def __init__(
-        self,
-        num_channel=3,
-        num_sub_heads=5,
-        output_k_A=70,
-        output_k_B=10,
-        *args,
-        **kwargs
+            self,
+            num_channel=3,
+            num_sub_heads=5,
+            output_k_A=70,
+            output_k_B=10,
+            *args,
+            **kwargs
     ):
         _warnings(args, kwargs)
         super().__init__()
@@ -53,7 +53,18 @@ class ResNet50(nn.Module):
         else:
             return self.head_B(self.resnet(self.input_convert(input)))
 
+    def freeze_feature_grad(self):
+        """
+        This is to freeze the feature extraction part of the resnet.
+        :return: None
+        """
+        for param in self.resnet.parameters():
+            param.requires_grad = False
 
-if __name__ == "__main__":
-    resnet = resnet50(pretrained=True)
-    print()
+    def enable_feature_grad(self):
+        """
+        this is to enbale feature gradients on resnet
+        :return: None
+        """
+        for param in self.resnet.parameters():
+            param.requires_grad = True

@@ -11,7 +11,7 @@ from deepclustering.loss.IID_losses import IIDLoss
 from deepclustering.loss.loss import KL_div
 from deepclustering.model import Model
 from deepclustering.utils import simplex, assert_list
-from deepclustering.utils.decorator import threaded
+from deepclustering.decorator import threaded
 from deepclustering.writer import SummaryWriter
 from torch import Tensor
 from termcolor import colored
@@ -41,7 +41,7 @@ def _l2_normalize(d: torch.Tensor) -> torch.Tensor:
 
 class VATLoss(nn.Module):
     def __init__(
-        self, xi=10.0, eps=1.0, prop_eps=0.25, ip=1, distance_func=KL_div(reduce=True)
+            self, xi=10.0, eps=1.0, prop_eps=0.25, ip=1, distance_func=KL_div(reduce=True)
     ):
         """VAT loss
         :param xi: hyperparameter of VAT (default: 10.0)
@@ -104,7 +104,7 @@ class VATLoss_Multihead(nn.Module):
     """
 
     def __init__(
-        self, xi=10.0, eps=1.0, prop_eps=0.25, ip=1, distance_func=KL_div(reduce=True)
+            self, xi=10.0, eps=1.0, prop_eps=0.25, ip=1, distance_func=KL_div(reduce=True)
     ):
         """VAT loss
         :param xi: hyperparameter of VAT (default: 10.0)
@@ -205,7 +205,7 @@ class MixUp(object):
         return mixup_img, mixup_label.detach(), mixup_index
 
 
-@threaded
+@threaded(name="plot")
 def pred_histgram(tf_writter: SummaryWriter, preds: Tensor, epoch: int):
     num_subheads, num_elements = preds.shape
     preds = preds.cpu().numpy()
