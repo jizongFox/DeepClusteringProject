@@ -12,7 +12,6 @@ import trainer
 from baseline.cifarDataset import Cifar10FeatureClusteringInterface
 
 DATA_PATH = "../.data/cifar_features.pth"
-fix_all_seed(1)
 
 
 def get_dataloader(
@@ -78,3 +77,4 @@ clusteringTrainer = Trainer(
     **merged_config["Trainer"]
 )
 clusteringTrainer.start_training()
+clusteringTrainer.clean_up()
