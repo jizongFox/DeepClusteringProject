@@ -1,5 +1,5 @@
 __all__ = ["IMSATAbstractTrainer", "IMSATVATGeoMixupTrainer", "IMSATVATGeoTrainer", "IMSATVATTrainer",
-           "IMSATMixupTrainer", "IMSATVATMixupTrainer"]
+           "IMSATMixupTrainer", "IMSATVATMixupTrainer", "IMSATGeoTrainer"]
 from typing import List, Union, Dict, Any
 
 import torch
@@ -143,6 +143,35 @@ class IMSATAbstractTrainer(ClusteringGeneralTrainer):
         :return:
         """
         return torch.Tensor([0]).to(self.device)
+
+
+class IMSATGeoTrainer(IMSATAbstractTrainer):
+
+    def __init_meters__(self) -> List[Union[str, List[str]]]:
+        columns_to_draw = super().__init_meters__()
+        self.METERINTERFACE.register_new_meter("train_geo", AverageValueMeter())
+        columns_to_draw = ["train_geo_mean"] + columns_to_draw
+        return columns_to_draw
+
+    def _regulaze(
+            self,
+            images: Tensor,
+            tf_images: Tensor,
+            img_pred_simplex: List[Tensor],
+            head_name: str = "B",
+    ) -> Tensor:
+        # advanced transformed images
+        tf_pred_simplex = self.model.torchnet(tf_images, head=head_name)
+        assert assert_list(simplex, tf_pred_simplex) and len(tf_pred_simplex) == len(img_pred_simplex)
+        # kl div:
+        geo_losses: List[Tensor] = []
+        for subhead, (tf1_pred, tf2_pred) in enumerate(zip(img_pred_simplex, tf_pred_simplex)):
+            assert simplex(tf1_pred) and simplex(tf2_pred)
+            geo_losses.append(self.kl_div(tf2_pred, tf1_pred.detach()))
+        geo_losses: Tensor = sum(geo_losses) / len(geo_losses)  # type: ignore
+        self.METERINTERFACE["train_geo"].add(geo_losses.item())
+        # the regularization for the two are 1:1 by default for the sake for simplification.
+        return geo_losses
 
 
 class IMSATVATTrainer(IMSATAbstractTrainer):

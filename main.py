@@ -120,6 +120,7 @@ def get_trainer(
         "iicgeovatmixup": trainer.IICGeoVATMixupTrainer,  # IIC with geo, vat and mixup as the data augmentation
         "imsat": trainer.IMSATAbstractTrainer,  # imsat without any regularization
         "imsatvat": trainer.IMSATVATTrainer,  # imsat with vat
+        "imsatgeo": trainer.IMSATGeoTrainer,
         "imsatmixup": trainer.IMSATMixupTrainer,  # imsat with mixup
         "imsatvatmixup": trainer.IMSATVATMixupTrainer,  # imsat with vat + mixup
         "imsatvatgeo": trainer.IMSATVATGeoTrainer,  # imsat with geo+vat
@@ -163,4 +164,4 @@ if __name__ == '__main__':
         **merged_config["Trainer"]
     )
     clusteringTrainer.start_training()
-    clusteringTrainer.clean_up(wait_time=3)
+    # clusteringTrainer.clean_up(wait_time=3)
