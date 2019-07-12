@@ -272,10 +272,9 @@ class IICGeoVATMixupTrainer(IICGeoVATTrainer):
     def _trainer_specific_loss(
             self, tf1_images: Tensor, tf2_images: Tensor, head_name: str
     ):
-        geo_loss = super()._trainer_specific_loss(tf1_images, tf2_images, head_name)
+        geo_vat_loss = super()._trainer_specific_loss(tf1_images, tf2_images, head_name)
         mixup_loss = self.mixup_loss(tf1_images, tf2_images, head_name)
-        vat_loss = self.vat_loss(tf1_images, tf2_images, head_name)
-        return geo_loss + mixup_loss + vat_loss
+        return geo_vat_loss + mixup_loss
 
     def mixup_loss(self, tf1_images: Tensor, tf2_images: Tensor, head_name: str):
         # just replace tf2_images with mix_up generated images
@@ -287,12 +286,5 @@ class IICGeoVATMixupTrainer(IICGeoVATTrainer):
             F.softmax(torch.randn(tf1_images.size(0), 2, device=self.device), 1),
         )
         assert (not tf1_images.requires_grad) and (not tf2_images.requires_grad)
-        batch_loss = super()._trainer_specific_loss(tf1_images, tf2_images, head_name)
-        return batch_loss
-
-    def vat_loss(self, tf1_images: Tensor, tf2_images: Tensor, head_name: str):
-        # just replace the tf2_image with VAT generated images
-        _, tf2_images, _ = self.VAT_module(self.model.torchnet, tf1_images)
-        assert (not tf1_images.requires_grad) and (not tf2_images.requires_grad)
-        batch_loss = super()._trainer_specific_loss(tf1_images, tf2_images, head_name)
+        batch_loss = IICGeoTrainer._trainer_specific_loss(self, tf1_images, tf2_images, head_name)
         return batch_loss
