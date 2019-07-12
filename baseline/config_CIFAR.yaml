@@ -1,0 +1,30 @@
+Arch:
+  name: clusternetimsat
+  output_k_A: 70
+  output_k_B: 10
+  num_sub_heads: 1
+  num_channel: 1
+
+
+Optim:
+  name: Adam
+  lr: 0.0001
+
+Scheduler:
+  name: MultiStepLR
+  milestones: [10, 20, 30, 50, 70]
+  gamma: 0.75
+
+DataLoader:
+  batch_size: 150
+  shuffle: true
+  num_workers: 16
+
+Trainer:
+  max_epoch: 80
+  save_dir: baseline_cifar10
+  device: cuda
+  head_control_params:
+    B: 1
+  use_sobel: false
+

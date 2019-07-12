@@ -3,7 +3,7 @@ from torch.distributions import Beta
 __all__ = ["VATModuleInterface", "MixUp"]
 
 import contextlib
-from typing import Union, Dict, Tuple
+from typing import Union, Dict, Tuple, List
 
 import torch
 import torch.nn as nn
@@ -77,7 +77,7 @@ class VATLoss(nn.Module):
                 pred_hat = model(x + self.xi * d)
                 adv_distance = self.distance_func(pred_hat, pred)
                 adv_distance.backward()
-                d = _l2_normalize(d.grad)
+                d = _l2_normalize(d.grad)  # type: ignore
 
             # calc LDS
             if isinstance(self.eps, torch.Tensor):
@@ -100,7 +100,7 @@ class VATLoss(nn.Module):
 
 class VATLoss_Multihead(nn.Module):
     """
-    this is the VAT for the multihead networks. each head outputs a simplex.
+    this is the VAT for the multi head networks. each head outputs a simplex.
     """
 
     def __init__(
@@ -135,13 +135,10 @@ class VATLoss_Multihead(nn.Module):
                 pred_hat = model(x + self.xi * d, **kwargs)
                 assert assert_list(simplex, pred_hat)
                 # here the pred_hat is the list of simplex
-                adv_distance = list(
-                    map(lambda p_, p: self.distance_func(p_, p), pred_hat, pred)
-                )
-                _adv_distance: torch.Tensor = sum(adv_distance) / float(
-                    len(adv_distance)
-                )
+                adv_distance: List[Tensor] = list(map(lambda p_, p: self.distance_func(p_, p), pred_hat, pred))
+                _adv_distance: torch.Tensor = sum(adv_distance) / float(len(adv_distance))  # type: ignore
                 _adv_distance.backward()  # type: ignore
+                assert d.grad is not None  # make sure d have a grad instead of None.
                 d = _l2_normalize(d.grad)
 
             # calc LDS
@@ -153,21 +150,21 @@ class VATLoss_Multihead(nn.Module):
             elif isinstance(self.eps, (float, int)):
                 r_adv = d * self.eps * self.prop_eps
             else:
-                raise NotImplementedError(
-                    f"eps should be tensor or float, given {self.eps}."
-                )
+                raise NotImplementedError(f"eps should be tensor or float, given {self.eps}.")
 
             pred_hat = model(x + r_adv, **kwargs)
             assert assert_list(simplex, pred_hat)
-            lds = list(
-                map(lambda p_, p: self.distance_func(p_, p), pred_hat, pred)
-            )  # type: ignore
-            lds: torch.Tensor = sum(lds) / float(len(lds))
+            lds = list(map(lambda p_, p: self.distance_func(p_, p), pred_hat, pred))  # type: ignore
+            _lds: torch.Tensor = sum(lds) / float(len(lds))  # type: ignore
 
-        return lds, (x + r_adv).detach(), r_adv.detach()
+        return _lds, (x + r_adv).detach(), r_adv.detach()
 
 
 def VATModuleInterface(params: Dict[str, Union[str, int, float]], verbose: bool = True):
+    """
+    VAT module interface to choose distance function based on the params.name
+    >>> assert params.name in ("kl","mi")
+    """
     loss_name = params.get("name", "kl")
     assert loss_name in ("kl", "mi")
     iid_loss = lambda x, y: IIDLoss()(x, y)[0]
@@ -179,7 +176,7 @@ def VATModuleInterface(params: Dict[str, Union[str, int, float]], verbose: bool 
     )
 
 
-class MixUp(object):
+class MixUp:
     def __init__(self, device: torch.device, num_classes: int) -> None:
         self.device = device
         self.beta_distr = Beta(torch.tensor([1.0]), torch.tensor([1.0]))

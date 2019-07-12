@@ -1,9 +1,5 @@
-__all__ = [
-    "MNISTClusteringDatasetInterface",
-    "MNISTSemiSupervisedDatasetInterface",
-    "default_mnist_img_transform",
-    "default_mnist_strong_transform",
-]
+__all__ = ["MNISTClusteringDatasetInterface", "MNISTSemiSupervisedDatasetInterface", "mnist_naive_transform",
+           "mnist_strong_transform"]
 from functools import reduce
 from typing import *
 
@@ -25,14 +21,14 @@ class MNISTClusteringDatasetInterface(ClusterDatasetInterface):
     ALLOWED_SPLIT = ["train", "val"]
 
     def __init__(
-        self,
-        data_root=None,
-        split_partitions: List[str] = ["train", "val"],
-        batch_size: int = 1,
-        shuffle: bool = False,
-        num_workers: int = 1,
-        pin_memory: bool = True,
-        drop_last=False,
+            self,
+            data_root=None,
+            split_partitions: List[str] = ["train", "val"],
+            batch_size: int = 1,
+            shuffle: bool = False,
+            num_workers: int = 1,
+            pin_memory: bool = True,
+            drop_last=False,
     ) -> None:
         super().__init__(
             MNIST,
@@ -46,14 +42,14 @@ class MNISTClusteringDatasetInterface(ClusterDatasetInterface):
         )
 
     def _creat_concatDataset(
-        self,
-        image_transform: Callable,
-        target_transform: Callable,
-        dataset_dict: dict = {},
+            self,
+            image_transform: Callable,
+            target_transform: Callable,
+            dataset_dict: dict = {},
     ):
         for split in self.split_partitions:
             assert (
-                split in self.ALLOWED_SPLIT
+                    split in self.ALLOWED_SPLIT
             ), f"Allowed split in MNIST-10:{self.ALLOWED_SPLIT}, given {split}."
 
         _datasets = []
@@ -73,13 +69,13 @@ class MNISTClusteringDatasetInterface(ClusterDatasetInterface):
 
 class MNISTSemiSupervisedDatasetInterface(SemiDatasetInterface):
     def __init__(
-        self,
-        data_root: str = None,
-        labeled_sample_num: int = 100,
-        img_transformation: Callable = None,
-        target_transformation: Callable = None,
-        *args,
-        **kwargs,
+            self,
+            data_root: str = None,
+            labeled_sample_num: int = 100,
+            img_transformation: Callable = None,
+            target_transformation: Callable = None,
+            *args,
+            **kwargs,
     ) -> None:
         super().__init__(
             MNIST,
@@ -92,7 +88,7 @@ class MNISTSemiSupervisedDatasetInterface(SemiDatasetInterface):
         )
 
     def _init_train_and_test_test(
-        self, transform, target_transform, *args, **kwargs
+            self, transform, target_transform, *args, **kwargs
     ) -> Tuple[Dataset, Dataset]:
         train_set = self.DataClass(
             self.data_root,
@@ -115,65 +111,50 @@ class MNISTSemiSupervisedDatasetInterface(SemiDatasetInterface):
         return train_set, val_set
 
 
-default_mnist_img_transform = {
-    # output shape would be 28*28
-    "tf1": transforms.Compose([transforms.ToTensor()]),
-    "tf2": transforms.Compose(
-        [
-            pil_augment.RandomCrop((28, 28), padding=2),
-            transforms.ColorJitter(
-                brightness=[0.6, 1.4],
-                contrast=[0.6, 1.4],
-                saturation=[0.6, 1.4],
-                hue=[-0.125, 0.125],
-            ),
-            transforms.ToTensor(),
-        ]
-    ),
-    "tf3": transforms.Compose([transforms.ToTensor()]),
-}
-
-default_mnist_strong_transform = {
+# ======================== public transform interface ===================
+mnist_naive_transform = {
     # output shape would be 24*24
     "tf1": transforms.Compose(
         [
-            pil_augment.RandomChoice(
-                transforms=[
-                    pil_augment.RandomCrop(size=(20, 20), padding=None),
-                    pil_augment.CenterCrop(size=(20, 20)),
-                ]
-            ),
-            pil_augment.Resize(size=24, interpolation=PIL.Image.BILINEAR),
+            transforms.CenterCrop((24, 24)),
+            transforms.ToTensor()
+        ]),
+    "tf2": transforms.Compose(
+        [
+            pil_augment.RandomCrop((24, 24), padding=0),
             transforms.ToTensor(),
         ]
     ),
+    "tf3": transforms.Compose(
+        [
+            transforms.CenterCrop((24, 24)),
+            transforms.ToTensor()
+        ]),
+}
+mnist_strong_transform = {
+    # output shape would be 24*24
+    "tf1": transforms.Compose([
+        pil_augment.RandomChoice(transforms=[
+            pil_augment.RandomCrop(size=(20, 20), padding=None),
+            pil_augment.CenterCrop(size=(20, 20))]),
+        pil_augment.Resize(size=24, interpolation=PIL.Image.BILINEAR),
+        transforms.ToTensor()]),
     "tf2": transforms.Compose(
         [
             pil_augment.RandomApply(
-                transforms=[
-                    transforms.RandomRotation(
-                        degrees=(-25.0, 25.0), resample=False, expand=False
-                    )
-                ],
-                p=0.5,
-            ),
-            pil_augment.RandomChoice(
-                transforms=[
-                    pil_augment.RandomCrop(size=(16, 16), padding=None),
-                    pil_augment.RandomCrop(size=(20, 20), padding=None),
-                    pil_augment.RandomCrop(size=(24, 24), padding=None),
-                ]
-            ),
+                transforms=[transforms.RandomRotation(degrees=(-25.0, 25.0), resample=False, expand=False)], p=0.5),
+            pil_augment.RandomChoice(transforms=[
+                pil_augment.RandomCrop(size=(16, 16), padding=None),
+                pil_augment.RandomCrop(size=(20, 20), padding=None),
+                pil_augment.RandomCrop(size=(24, 24), padding=None),
+            ]),
             pil_augment.Resize(size=24, interpolation=PIL.Image.BILINEAR),
-            transforms.ColorJitter(
-                brightness=[0.6, 1.4],
-                contrast=[0.6, 1.4],
-                saturation=[0.6, 1.4],
-                hue=[-0.125, 0.125],
-            ),
+            transforms.ColorJitter(brightness=[0.6, 1.4],
+                                   contrast=[0.6, 1.4],
+                                   saturation=[0.6, 1.4],
+                                   hue=[-0.125, 0.125]),
             transforms.ToTensor(),
-        ]
-    ),
+        ]),
     "tf3": transforms.Compose(
         [
             pil_augment.CenterCrop(size=(20, 20)),
@@ -182,3 +163,4 @@ default_mnist_strong_transform = {
         ]
     ),
 }
+# ======================== public transform interface ===================
