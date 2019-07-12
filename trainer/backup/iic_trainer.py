@@ -1,5 +1,3 @@
-__all__ = ["IICMixupTrainer", "IICGeoVATMixupTrainer", "IICGeoVATTrainer", "IICGeoTrainer", "IICVATTrainer",
-           "IICGeoMixupTrainer", "IICVatMixupTrainer"]
 from typing import List, Union, Dict
 
 import torch
@@ -15,10 +13,10 @@ from torch import Tensor
 from torch.nn import functional as F
 from torch.utils.data import DataLoader
 
-from .clustering_trainer import ClusteringGeneralTrainer, VATReg, MixupReg
+from RegHelper import VATModuleInterface, MixUp
+from trainer.clustering_trainer import ClusteringGeneralTrainer
 
 
-# GEO
 class IICGeoTrainer(ClusteringGeneralTrainer):
     """
     This trainer is to add the IIC loss in the `_train_specific_loss` function.
@@ -105,8 +103,7 @@ class IICGeoTrainer(ClusteringGeneralTrainer):
         return batch_loss
 
 
-# VAT
-class IICVATTrainer(IICGeoTrainer, VATReg):
+class IICVATTrainer(IICGeoTrainer):
     """
     We add the VAT module to create a set of VAT examples. These VAT examples replace tf2_images
     so that the MI takes tf1_images and VAT(tf1_images).
@@ -126,37 +123,89 @@ class IICVATTrainer(IICGeoTrainer, VATReg):
             head_control_params: Dict[str, int] = {"B": 1},
             use_sobel: bool = False,
             config: dict = None,
-            VAT_params: Dict[str, Union[int, float, str]] = {"name": "mi"},
+            VAT_params: Dict[str, Union[int, float, str]] = {"name": "kl"},
             **kwargs,
     ) -> None:
-        IICGeoTrainer.__init__(self,
-                               model,
-                               train_loader_A,
-                               train_loader_B,
-                               val_loader,
-                               max_epoch,
-                               save_dir,
-                               checkpoint_path,
-                               device,
-                               head_control_params,
-                               use_sobel,
-                               config,
-                               **kwargs,
-                               )
-        VATReg.__init__(self, VAT_params)
+        super().__init__(
+            model,
+            train_loader_A,
+            train_loader_B,
+            val_loader,
+            max_epoch,
+            save_dir,
+            checkpoint_path,
+            device,
+            head_control_params,
+            use_sobel,
+            config,
+            **kwargs,
+        )
+        self.VAT_module = VATModuleInterface(VAT_params)
 
     def _trainer_specific_loss(
             self, tf1_images: Tensor, tf2_images: Tensor, head_name: str
     ):
         # just replace the tf2_image with VAT generated images
-        _, tf2_images, _ = self._vat_regularization(self.model.torchnet, tf1_images, head=head_name)
+        _, tf2_images, _ = self.VAT_module(self.model.torchnet, tf1_images)
         assert (not tf2_images.requires_grad) and (not tf1_images.requires_grad)
         batch_loss = super()._trainer_specific_loss(tf1_images, tf2_images, head_name)
         return batch_loss
 
 
-# MIXUP
-class IICMixupTrainer(IICGeoTrainer, MixupReg):
+class IICGeoVATTrainer(IICVATTrainer):
+    """
+    Use the MI between (tf1_images, VAT(tf1_images)+tf2_image))
+    tf2_images are the original tf2_images with advanced transformation.
+    for mathematic simplication, MI(a,b+c)>=MI(a,b)+MI(a,c), we maximize the lower bound
+    of the MI by maximizing MI(tf1_images, tf2_images) + MI (tf1_images, VAT(tf1_images))
+    """
+
+    def __init__(
+            self,
+            model: Model,
+            train_loader_A: DataLoader,
+            train_loader_B: DataLoader,
+            val_loader: DataLoader,
+            max_epoch: int = 100,
+            save_dir: str = "IICTrainer",
+            checkpoint_path: str = None,
+            device="cpu",
+            head_control_params: Dict[str, int] = {"B": 1},
+            use_sobel: bool = False,
+            config: dict = None,
+            VAT_params: Dict[str, Union[int, float, str]] = {"name": "kl"},
+            **kwargs,
+    ) -> None:
+        super().__init__(
+            model,
+            train_loader_A,
+            train_loader_B,
+            val_loader,
+            max_epoch,
+            save_dir,
+            checkpoint_path,
+            device,
+            head_control_params,
+            use_sobel,
+            config,
+            VAT_params,
+            **kwargs,
+        )
+
+    def _trainer_specific_loss(
+            self, tf1_images: Tensor, tf2_images: Tensor, head_name: str
+    ):
+        # VAT_loss
+        vat_loss = super()._trainer_specific_loss(tf1_images, tf2_images, head_name)
+        # here the tf2_images is untouched
+        # original Geo loss
+        geo_loss = IICGeoTrainer._trainer_specific_loss(
+            self, tf1_images, tf2_images, head_name
+        )
+        return vat_loss + geo_loss
+
+
+class IICMixupTrainer(IICGeoTrainer):
     """
     This trainer is to replace tf2_images by a mixup image
     """
@@ -176,103 +225,66 @@ class IICMixupTrainer(IICGeoTrainer, MixupReg):
             config: dict = None,
             **kwargs,
     ) -> None:
-        IICGeoTrainer.__init__(self,
-                               model,
-                               train_loader_A,
-                               train_loader_B,
-                               val_loader,
-                               max_epoch,
-                               save_dir,
-                               checkpoint_path,
-                               device,
-                               head_control_params,
-                               use_sobel,
-                               config,
-                               **kwargs,
-                               )
-        MixupReg.__init__(self)
+        super().__init__(
+            model,
+            train_loader_A,
+            train_loader_B,
+            val_loader,
+            max_epoch,
+            save_dir,
+            checkpoint_path,
+            device,
+            head_control_params,
+            use_sobel,
+            config,
+            **kwargs,
+        )
+        self.mixup_module = MixUp(
+            device=self.device, num_classes=self.model.arch_dict["output_k_B"]
+        )
 
     def _trainer_specific_loss(
             self, tf1_images: Tensor, tf2_images: Tensor, head_name: str
     ):
         # just replace tf2_images with mix_up generated images
-        tf2_images, *_ = self._mixup_image_pred_index(
+        tf2_images, *_ = self.mixup_module(
             tf1_images,
             F.softmax(torch.randn(tf1_images.size(0), 2, device=self.device), 1),
             tf1_images.flip(0),
             F.softmax(torch.randn(tf1_images.size(0), 2, device=self.device), 1),
         )
-        # call IIC loss
         batch_loss = super()._trainer_specific_loss(tf1_images, tf2_images, head_name)
         return batch_loss
 
 
-# GEO+VAT
-class IICGeoVATTrainer(IICVATTrainer):
-    """
-    Use the MI between (tf1_images, VAT(tf1_images)+tf2_image))
-    tf2_images are the original tf2_images with advanced transformation.
-    for mathematic simplication, MI(a,b+c)>=MI(a,b)+MI(a,c), we maximize the lower bound
-    of the MI by maximizing MI(tf1_images, tf2_images) + MI (tf1_images, VAT(tf1_images))
-    """
-
-    def _trainer_specific_loss(
-            self, tf1_images: Tensor, tf2_images: Tensor, head_name: str
-    ):
-        # VAT_loss
-        vat_loss = super()._trainer_specific_loss(tf1_images, tf2_images, head_name)
-        # original Geo loss
-        geo_loss = IICGeoTrainer._trainer_specific_loss(self, tf1_images, tf2_images, head_name)
-        return vat_loss + geo_loss
-
-
-# GEO+Mixup
-class IICGeoMixupTrainer(IICMixupTrainer):
-
-    def _trainer_specific_loss(
-            self, tf1_images: Tensor, tf2_images: Tensor, head_name: str
-    ):
-        mixup_loss = super()._trainer_specific_loss(tf1_images, tf2_images, head_name)
-        geo_loss = IICGeoTrainer._trainer_specific_loss(self, tf1_images, tf2_images, head_name)
-        return geo_loss + mixup_loss
-
-
-# Mixup+VAT
-class IICVatMixupTrainer(IICMixupTrainer, VATReg):
+class IICGeoVATMixupTrainer(IICGeoVATTrainer):
 
     def __init__(self, model: Model, train_loader_A: DataLoader, train_loader_B: DataLoader, val_loader: DataLoader,
                  max_epoch: int = 100, save_dir: str = "IICTrainer", checkpoint_path: str = None, device="cpu",
                  head_control_params: Dict[str, int] = {"B": 1}, use_sobel: bool = False, config: dict = None,
-                 VAT_params={"name": "mi", "eps": 10}, **kwargs) -> None:
-        IICMixupTrainer.__init__(self, model, train_loader_A, train_loader_B, val_loader, max_epoch, save_dir,
-                                 checkpoint_path,
-                                 device, head_control_params, use_sobel, config, **kwargs)
-        VATReg.__init__(self, VAT_params)
-
-    def _trainer_specific_loss(
-            self, tf1_images: Tensor, tf2_images: Tensor, head_name: str
-    ):
-        mixup_loss = super()._trainer_specific_loss(tf1_images, tf2_images, head_name)
-        # vat loss
-        _, tf2_images, _ = self._vat_regularization(self.model.torchnet, tf1_images, head=head_name)
-        assert (not tf2_images.requires_grad) and (not tf1_images.requires_grad)
-        vat_loss = IICGeoTrainer._trainer_specific_loss(self, tf1_images, tf2_images, head_name)
-        return mixup_loss + vat_loss
-
-
-# GEO+Vat+Mixup
-class IICGeoVATMixupTrainer(IICVatMixupTrainer):
-
-    def __init__(self, model: Model, train_loader_A: DataLoader, train_loader_B: DataLoader, val_loader: DataLoader,
-                 max_epoch: int = 100, save_dir: str = "IICTrainer", checkpoint_path: str = None, device="cpu",
-                 head_control_params: Dict[str, int] = {"B": 1}, use_sobel: bool = False, config: dict = None,
-                 VAT_params={"name": "mi", "eps": 10}, **kwargs) -> None:
+                 VAT_params: Dict[str, Union[int, float, str]] = {"name": "kl"}, **kwargs) -> None:
         super().__init__(model, train_loader_A, train_loader_B, val_loader, max_epoch, save_dir, checkpoint_path,
                          device, head_control_params, use_sobel, config, VAT_params, **kwargs)
+        self.mixup_module = MixUp(
+            device=self.device, num_classes=self.model.arch_dict["output_k_B"]
+        )
 
     def _trainer_specific_loss(
             self, tf1_images: Tensor, tf2_images: Tensor, head_name: str
     ):
-        vat_mixup_loss = super()._trainer_specific_loss(tf1_images, tf2_images, head_name)
-        geo_loss = IICGeoTrainer._trainer_specific_loss(self, tf1_images, tf2_images, head_name)
-        return vat_mixup_loss + geo_loss
+        geo_vat_loss = super()._trainer_specific_loss(tf1_images, tf2_images, head_name)
+        mixup_loss = self.mixup_loss(tf1_images, tf2_images, head_name)
+        return geo_vat_loss + mixup_loss
+
+    def mixup_loss(self, tf1_images: Tensor, tf2_images: Tensor, head_name: str):
+        # just replace tf2_images with mix_up generated images
+        tf1_images = tf1_images.to(self.device)
+        tf2_images, *_ = self.mixup_module(
+            tf1_images,
+            F.softmax(torch.randn(tf1_images.size(0), 2, device=self.device), 1),
+            tf1_images.flip(0),
+            F.softmax(torch.randn(tf1_images.size(0), 2, device=self.device), 1),
+        )
+        assert (not tf1_images.requires_grad) and (not tf2_images.requires_grad)
+        batch_loss = IICGeoTrainer._trainer_specific_loss(self, tf1_images, tf2_images, head_name)
+        return batch_loss

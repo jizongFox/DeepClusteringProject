@@ -15,6 +15,7 @@ from deepclustering.decorator import threaded
 from deepclustering.writer import SummaryWriter
 from torch import Tensor
 from termcolor import colored
+import pandas as pd
 
 
 @contextlib.contextmanager
@@ -117,7 +118,7 @@ class VATLoss_Multihead(nn.Module):
         self.ip = ip
         self.prop_eps = prop_eps
         self.distance_func = distance_func
-        print(colored(f"VAT with eps: {self.eps}, xi: {self.xi}", "green"))
+        print(colored(f"VAT with eps: {self.eps}, xi: {self.xi}, distance: {self.distance_func}", "green"))
 
     def forward(self, model: Model, x: torch.Tensor, **kwargs):
         with torch.no_grad():
@@ -209,4 +210,15 @@ def pred_histgram(tf_writter: SummaryWriter, preds: Tensor, epoch: int):
     for subhead in range(num_subheads):
         tf_writter.add_histogram(
             tag=f"subhead_{subhead}_pred", values=preds[subhead] + 1, global_step=epoch
+        )
+        pred_distribution = pd.Series(preds[subhead]).value_counts()
+        pred_max = pred_distribution.max() / len(preds[subhead])
+        pred_min = pred_distribution.min() / len(preds[subhead])
+        tf_writter.add_scalars(
+            f"distributions_{subhead}",
+            {
+                "max": pred_max,
+                "min": pred_min
+            },
+            global_step=epoch
         )
