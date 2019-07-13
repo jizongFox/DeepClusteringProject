@@ -1,6 +1,7 @@
 """
 This is the trainer general clustering trainer
 """
+import time
 from collections import OrderedDict
 from pathlib import Path
 from typing import List, Union, Dict, Tuple
@@ -195,6 +196,7 @@ class ClusteringGeneralTrainer(_Trainer):
             # save last.pth and/or best.pth based on current_score
             self.save_checkpoint(self.state_dict, epoch, current_score)
         # close tf.summary_writer
+        time.sleep(3)
         self.writer.close()
 
     def _train_loop(

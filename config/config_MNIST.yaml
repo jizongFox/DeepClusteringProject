@@ -32,6 +32,7 @@ Trainer:
     B: 1
   VAT_params:
     eps: 8.0
+  reg_weight: 0.001
 
 # for mnist dataset, imsat vat trainer VAT_params. eps should be greater than 10.
 Seed:
