@@ -17,34 +17,34 @@ iic_vat_name=kl
 max_epoch=1
 seed=1
 declare -a StringArray=(
-"python  main.py Config=config/config_MNIST.yaml Trainer.name=iicgeo Trainer.save_dir=${main_dir}/mnist_${seed}/iicgeo Trainer.max_epoch=${max_epoch} Seed=${seed} DataLoader.transforms=${transforms}" \
-"python  main.py Config=config/config_MNIST.yaml Trainer.name=iicmixup Trainer.save_dir=${main_dir}/mnist_${seed}/iicmixup Trainer.max_epoch=${max_epoch} Seed=${seed} DataLoader.transforms=${transforms}" \
-"python  main.py Config=config/config_MNIST.yaml Trainer.name=iicvat Trainer.save_dir=${main_dir}/mnist_${seed}/iicvat_kl Trainer.max_epoch=${max_epoch} Seed=${seed} DataLoader.transforms=${transforms} Trainer.VAT_params.name=kl" \
-"python  main.py Config=config/config_MNIST.yaml Trainer.name=iicgeovat Trainer.save_dir=${main_dir}/mnist_${seed}/iicgeovat_kl Trainer.max_epoch=${max_epoch} Seed=${seed} DataLoader.transforms=${transforms} Trainer.VAT_params.name=kl" \
-"python  main.py Config=config/config_MNIST.yaml Trainer.name=iicgeomixup Trainer.save_dir=${main_dir}/mnist_${seed}/iicgeomixup Trainer.max_epoch=${max_epoch} Seed=${seed} DataLoader.transforms=${transforms}" \
-"python  main.py Config=config/config_MNIST.yaml Trainer.name=iicgeovatmixup Trainer.save_dir=${main_dir}/mnist_${seed}/iicgeovatmixup_kl Trainer.max_epoch=${max_epoch} Seed=${seed} DataLoader.transforms=${transforms} Trainer.VAT_params.name=kl" \
+"python -O  main.py Config=config/config_MNIST.yaml Trainer.name=iicgeo Trainer.save_dir=${main_dir}/mnist_${seed}/iicgeo Trainer.max_epoch=${max_epoch} Seed=${seed} DataLoader.transforms=${transforms}" \
+"python -O  main.py Config=config/config_MNIST.yaml Trainer.name=iicmixup Trainer.save_dir=${main_dir}/mnist_${seed}/iicmixup Trainer.max_epoch=${max_epoch} Seed=${seed} DataLoader.transforms=${transforms}" \
+"python -O  main.py Config=config/config_MNIST.yaml Trainer.name=iicvat Trainer.save_dir=${main_dir}/mnist_${seed}/iicvat_kl Trainer.max_epoch=${max_epoch} Seed=${seed} DataLoader.transforms=${transforms} Trainer.VAT_params.name=kl" \
+"python -O  main.py Config=config/config_MNIST.yaml Trainer.name=iicgeovat Trainer.save_dir=${main_dir}/mnist_${seed}/iicgeovat_kl Trainer.max_epoch=${max_epoch} Seed=${seed} DataLoader.transforms=${transforms} Trainer.VAT_params.name=kl" \
+"python -O  main.py Config=config/config_MNIST.yaml Trainer.name=iicgeomixup Trainer.save_dir=${main_dir}/mnist_${seed}/iicgeomixup Trainer.max_epoch=${max_epoch} Seed=${seed} DataLoader.transforms=${transforms}" \
+"python -O  main.py Config=config/config_MNIST.yaml Trainer.name=iicgeovatmixup Trainer.save_dir=${main_dir}/mnist_${seed}/iicgeovatmixup_kl Trainer.max_epoch=${max_epoch} Seed=${seed} DataLoader.transforms=${transforms} Trainer.VAT_params.name=kl" \
 
-"python  main.py Config=config/config_MNIST.yaml Trainer.name=iicvat Trainer.save_dir=${main_dir}/mnist_${seed}/iicvat_mi Trainer.max_epoch=${max_epoch} Seed=${seed} DataLoader.transforms=${transforms} Trainer.VAT_params.name=mi" \
-"python  main.py Config=config/config_MNIST.yaml Trainer.name=iicgeovat Trainer.save_dir=${main_dir}/mnist_${seed}/iicgeovat_mi Trainer.max_epoch=${max_epoch} Seed=${seed} DataLoader.transforms=${transforms} Trainer.VAT_params.name=mi" \
-"python  main.py Config=config/config_MNIST.yaml Trainer.name=iicgeovatmixup Trainer.save_dir=${main_dir}/mnist_${seed}/iicgeovatmixup_mi Trainer.max_epoch=${max_epoch} Seed=${seed} DataLoader.transforms=${transforms} Trainer.VAT_params.name=mi" \
+"python -O  main.py Config=config/config_MNIST.yaml Trainer.name=iicvat Trainer.save_dir=${main_dir}/mnist_${seed}/iicvat_mi Trainer.max_epoch=${max_epoch} Seed=${seed} DataLoader.transforms=${transforms} Trainer.VAT_params.name=mi" \
+"python -O  main.py Config=config/config_MNIST.yaml Trainer.name=iicgeovat Trainer.save_dir=${main_dir}/mnist_${seed}/iicgeovat_mi Trainer.max_epoch=${max_epoch} Seed=${seed} DataLoader.transforms=${transforms} Trainer.VAT_params.name=mi" \
+"python -O  main.py Config=config/config_MNIST.yaml Trainer.name=iicgeovatmixup Trainer.save_dir=${main_dir}/mnist_${seed}/iicgeovatmixup_mi Trainer.max_epoch=${max_epoch} Seed=${seed} DataLoader.transforms=${transforms} Trainer.VAT_params.name=mi" \
 
-"python  main.py Config=config/config_MNIST.yaml Trainer.name=iicgeovatreg Trainer.save_dir=${main_dir}/mnist_${seed}/iicgeovatreg Trainer.max_epoch=${max_epoch} Seed=${seed} DataLoader.transforms=${transforms}" \
-"python  main.py Config=config/config_MNIST.yaml Trainer.name=iicgeomixupreg Trainer.save_dir=${main_dir}/mnist_${seed}/iicgeomixupreg Trainer.max_epoch=${max_epoch} Seed=${seed} DataLoader.transforms=${transforms}" \
-"python  main.py Config=config/config_MNIST.yaml Trainer.name=iicgeovatmixupreg Trainer.save_dir=${main_dir}/mnist_${seed}/iicgeovatmixupreg Trainer.max_epoch=${max_epoch} Seed=${seed} DataLoader.transforms=${transforms}" \
+"python -O  main.py Config=config/config_MNIST.yaml Trainer.name=iicgeovatreg Trainer.save_dir=${main_dir}/mnist_${seed}/iicgeovatreg Trainer.max_epoch=${max_epoch} Seed=${seed} DataLoader.transforms=${transforms}" \
+"python -O  main.py Config=config/config_MNIST.yaml Trainer.name=iicgeomixupreg Trainer.save_dir=${main_dir}/mnist_${seed}/iicgeomixupreg Trainer.max_epoch=${max_epoch} Seed=${seed} DataLoader.transforms=${transforms}" \
+"python -O  main.py Config=config/config_MNIST.yaml Trainer.name=iicgeovatmixupreg Trainer.save_dir=${main_dir}/mnist_${seed}/iicgeovatmixupreg Trainer.max_epoch=${max_epoch} Seed=${seed} DataLoader.transforms=${transforms}" \
 
-"python  main.py Config=config/config_MNIST.yaml Trainer.name=imsat Trainer.save_dir=${main_dir}/mnist_${seed}/imsat Trainer.max_epoch=${max_epoch} Seed=${seed} DataLoader.transforms=${transforms}" \
-"python  main.py Config=config/config_MNIST.yaml Trainer.name=imsatvat Trainer.save_dir=${main_dir}/mnist_${seed}/imsatvat Trainer.max_epoch=${max_epoch} Seed=${seed} DataLoader.transforms=${transforms}" \
-"python  main.py Config=config/config_MNIST.yaml Trainer.name=imsatgeo Trainer.save_dir=${main_dir}/mnist_${seed}/imsatgeo Trainer.max_epoch=${max_epoch} Seed=${seed} DataLoader.transforms=${transforms}" \
-"python  main.py Config=config/config_MNIST.yaml Trainer.name=imsatmixup Trainer.save_dir=${main_dir}/mnist_${seed}/imsatmixup Trainer.max_epoch=${max_epoch} Seed=${seed} DataLoader.transforms=${transforms}" \
-"python  main.py Config=config/config_MNIST.yaml Trainer.name=imsatvatmixup Trainer.save_dir=${main_dir}/mnist_${seed}/imsatvatmixup Trainer.max_epoch=${max_epoch} Seed=${seed} DataLoader.transforms=${transforms}" \
-"python  main.py Config=config/config_MNIST.yaml Trainer.name=imsatvatgeo Trainer.save_dir=${main_dir}/mnist_${seed}/imsatvatgeo Trainer.max_epoch=${max_epoch} Seed=${seed} DataLoader.transforms=${transforms}" \
-"python  main.py Config=config/config_MNIST.yaml Trainer.name=imsatgeomixup Trainer.save_dir=${main_dir}/mnist_${seed}/imsatgeomixup Trainer.max_epoch=${max_epoch} Seed=${seed} DataLoader.transforms=${transforms}" \
-"python  main.py Config=config/config_MNIST.yaml Trainer.name=imsatvatgeomixup Trainer.save_dir=${main_dir}/mnist_${seed}/imsatvatgeomixup Trainer.max_epoch=${max_epoch} Seed=${seed} DataLoader.transforms=${transforms}" \
+"python -O  main.py Config=config/config_MNIST.yaml Trainer.name=imsat Trainer.save_dir=${main_dir}/mnist_${seed}/imsat Trainer.max_epoch=${max_epoch} Seed=${seed} DataLoader.transforms=${transforms}" \
+"python -O  main.py Config=config/config_MNIST.yaml Trainer.name=imsatvat Trainer.save_dir=${main_dir}/mnist_${seed}/imsatvat Trainer.max_epoch=${max_epoch} Seed=${seed} DataLoader.transforms=${transforms}" \
+"python -O  main.py Config=config/config_MNIST.yaml Trainer.name=imsatgeo Trainer.save_dir=${main_dir}/mnist_${seed}/imsatgeo Trainer.max_epoch=${max_epoch} Seed=${seed} DataLoader.transforms=${transforms}" \
+"python -O  main.py Config=config/config_MNIST.yaml Trainer.name=imsatmixup Trainer.save_dir=${main_dir}/mnist_${seed}/imsatmixup Trainer.max_epoch=${max_epoch} Seed=${seed} DataLoader.transforms=${transforms}" \
+"python -O  main.py Config=config/config_MNIST.yaml Trainer.name=imsatvatmixup Trainer.save_dir=${main_dir}/mnist_${seed}/imsatvatmixup Trainer.max_epoch=${max_epoch} Seed=${seed} DataLoader.transforms=${transforms}" \
+"python -O  main.py Config=config/config_MNIST.yaml Trainer.name=imsatvatgeo Trainer.save_dir=${main_dir}/mnist_${seed}/imsatvatgeo Trainer.max_epoch=${max_epoch} Seed=${seed} DataLoader.transforms=${transforms}" \
+"python -O  main.py Config=config/config_MNIST.yaml Trainer.name=imsatgeomixup Trainer.save_dir=${main_dir}/mnist_${seed}/imsatgeomixup Trainer.max_epoch=${max_epoch} Seed=${seed} DataLoader.transforms=${transforms}" \
+"python -O  main.py Config=config/config_MNIST.yaml Trainer.name=imsatvatgeomixup Trainer.save_dir=${main_dir}/mnist_${seed}/imsatvatgeomixup Trainer.max_epoch=${max_epoch} Seed=${seed} DataLoader.transforms=${transforms}" \
 )
 #
 for cmd in "${StringArray[@]}"
 do
 echo ${cmd}
-#wrapper "${time}" "${cmd}"
-${cmd}
+wrapper "${time}" "${cmd}"
+#${cmd}
 done

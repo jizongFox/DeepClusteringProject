@@ -34,9 +34,9 @@ def _disable_tracking_bn_stats(model):
 
 def _l2_normalize(d: torch.Tensor) -> torch.Tensor:
     d_reshaped = d.view(d.shape[0], -1, *(1 for _ in range(d.dim() - 2)))
-    d /= torch.norm(d_reshaped, dim=1, keepdim=True)  # + 1e-8
-    ones_ = torch.ones(d.shape[0], device=d.device)
-    assert torch.allclose(d.view(d.shape[0], -1).norm(dim=1), ones_, rtol=1e-3)
+    d /= (torch.norm(d_reshaped, dim=1, keepdim=True) + 1e-8)
+    # ones_ = torch.ones(d.shape[0], device=d.device)
+    # assert torch.allclose(d.view(d.shape[0], -1).norm(dim=1), ones_, rtol=1e-3)
     return d
 
 
@@ -211,14 +211,14 @@ def pred_histgram(tf_writter: SummaryWriter, preds: Tensor, epoch: int):
         tf_writter.add_histogram(
             tag=f"subhead_{subhead}_pred", values=preds[subhead] + 1, global_step=epoch
         )
-        pred_distribution = pd.Series(preds[subhead]).value_counts()
-        pred_max = pred_distribution.max() / len(preds[subhead])
-        pred_min = pred_distribution.min() / len(preds[subhead])
-        tf_writter.add_scalars(
-            f"distributions_{subhead}",
-            {
-                "max": pred_max,
-                "min": pred_min
-            },
-            global_step=epoch
-        )
+        # pred_distribution = pd.Series(preds[subhead]).value_counts()
+        # pred_max = pred_distribution.max() / len(preds[subhead])
+        # pred_min = pred_distribution.min() / len(preds[subhead])
+        # tf_writter.add_scalars(
+        #     f"distributions_{subhead}",
+        #     {
+        #         "max": pred_max,
+        #         "min": pred_min
+        #     },
+        #     global_step=epoch
+        # )
