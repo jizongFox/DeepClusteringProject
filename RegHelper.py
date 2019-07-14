@@ -1,21 +1,18 @@
-from torch.distributions import Beta
-
 __all__ = ["VATModuleInterface", "MixUp"]
-
 import contextlib
 from typing import Union, Dict, Tuple, List
 
 import torch
 import torch.nn as nn
+from deepclustering.decorator import threaded
 from deepclustering.loss.IID_losses import IIDLoss
 from deepclustering.loss.loss import KL_div
 from deepclustering.model import Model
 from deepclustering.utils import simplex, assert_list
-from deepclustering.decorator import threaded
 from deepclustering.writer import SummaryWriter
-from torch import Tensor
 from termcolor import colored
-import pandas as pd
+from torch import Tensor
+from torch.distributions import Beta
 
 
 @contextlib.contextmanager

@@ -219,7 +219,7 @@ class ClusteringGeneralTrainer(_Trainer):
         :param kwargs:
         :return: None
         """
-        # rubostness asserts
+        # robustness asserts
         assert isinstance(train_loader_B, DataLoader) and isinstance(
             train_loader_A, DataLoader
         )
