@@ -31,6 +31,7 @@ declare -a StringArray=(
 "python -O  main.py Config=config/config_MNIST.yaml Trainer.name=iicgeovatreg Trainer.save_dir=${main_dir}/mnist_${seed}/iicgeovatreg Trainer.max_epoch=${max_epoch} Seed=${seed} DataLoader.transforms=${transforms}" \
 "python -O  main.py Config=config/config_MNIST.yaml Trainer.name=iicgeomixupreg Trainer.save_dir=${main_dir}/mnist_${seed}/iicgeomixupreg Trainer.max_epoch=${max_epoch} Seed=${seed} DataLoader.transforms=${transforms}" \
 "python -O  main.py Config=config/config_MNIST.yaml Trainer.name=iicgeovatmixupreg Trainer.save_dir=${main_dir}/mnist_${seed}/iicgeovatmixupreg Trainer.max_epoch=${max_epoch} Seed=${seed} DataLoader.transforms=${transforms}" \
+"python -O  main.py Config=config/config_MNIST.yaml Trainer.name=iicgeovatvatreg Trainer.save_dir=${main_dir}/mnist_${seed}/iicgeovatvatreg Trainer.max_epoch=${max_epoch} Seed=${seed} DataLoader.transforms=${transforms}" \
 
 "python -O  main.py Config=config/config_MNIST.yaml Trainer.name=imsat Trainer.save_dir=${main_dir}/mnist_${seed}/imsat Trainer.max_epoch=${max_epoch} Seed=${seed} DataLoader.transforms=${transforms}" \
 "python -O  main.py Config=config/config_MNIST.yaml Trainer.name=imsatvat Trainer.save_dir=${main_dir}/mnist_${seed}/imsatvat Trainer.max_epoch=${max_epoch} Seed=${seed} DataLoader.transforms=${transforms}" \

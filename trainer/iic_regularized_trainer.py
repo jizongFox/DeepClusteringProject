@@ -1,4 +1,4 @@
-__all__ = ["IICMixup_RegTrainer", "IICGeoTrainer", "IICVATMixup_RegTrainer", "IICVAT_RegTrainer"]
+__all__ = ["IICMixup_RegTrainer", "IICGeoTrainer", "IICVATMixup_RegTrainer", "IICVAT_RegTrainer", "IICVATVAT_RegTrainer"]
 from typing import Union, Dict, List
 
 from deepclustering.meters import AverageValueMeter
@@ -75,6 +75,17 @@ class IICVAT_RegTrainer(IICGeoTrainer, VATReg):
         vat_loss, *_ = self._vat_regularization(self.model.torchnet, tf1_images, head=head_name)
         self.METERINTERFACE["train_adv"].add(vat_loss.item())
         return geo_loss + self.reg_weight * vat_loss
+
+
+class IICVATVAT_RegTrainer(IICVAT_RegTrainer):
+    """
+    This is to implement MI(p(x), p(T(x)))+ self.weights*(KL(p(VAT(x)),p(x)) + KL(p(VAT(T(x))),p(T(x))))
+    """
+
+    def _trainer_specific_loss(self, tf1_images: Tensor, tf2_images: Tensor, head_name: str):
+        iic_vat_reg_loss = super()._trainer_specific_loss(tf1_images, tf2_images, head_name)
+        vat_loss_2, *_ = self._vat_regularization(self.model.torchnet, tf2_images, head=head_name)
+        return iic_vat_reg_loss + self.reg_weight * vat_loss_2
 
 
 # MIXUP
