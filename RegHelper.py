@@ -1,20 +1,18 @@
-from torch.distributions import Beta
-
 __all__ = ["VATModuleInterface", "MixUp"]
-
 import contextlib
 from typing import Union, Dict, Tuple, List
 
 import torch
 import torch.nn as nn
+from deepclustering.decorator import threaded
 from deepclustering.loss.IID_losses import IIDLoss
 from deepclustering.loss.loss import KL_div
 from deepclustering.model import Model
 from deepclustering.utils import simplex, assert_list
-from deepclustering.decorator import threaded
 from deepclustering.writer import SummaryWriter
-from torch import Tensor
 from termcolor import colored
+from torch import Tensor
+from torch.distributions import Beta
 
 
 @contextlib.contextmanager
@@ -33,9 +31,9 @@ def _disable_tracking_bn_stats(model):
 
 def _l2_normalize(d: torch.Tensor) -> torch.Tensor:
     d_reshaped = d.view(d.shape[0], -1, *(1 for _ in range(d.dim() - 2)))
-    d /= torch.norm(d_reshaped, dim=1, keepdim=True)  # + 1e-8
-    ones_ = torch.ones(d.shape[0], device=d.device)
-    assert torch.allclose(d.view(d.shape[0], -1).norm(dim=1), ones_, rtol=1e-3)
+    d /= (torch.norm(d_reshaped, dim=1, keepdim=True) + 1e-8)
+    # ones_ = torch.ones(d.shape[0], device=d.device)
+    # assert torch.allclose(d.view(d.shape[0], -1).norm(dim=1), ones_, rtol=1e-3)
     return d
 
 
@@ -117,7 +115,7 @@ class VATLoss_Multihead(nn.Module):
         self.ip = ip
         self.prop_eps = prop_eps
         self.distance_func = distance_func
-        print(colored(f"VAT with eps: {self.eps}, xi: {self.xi}", "green"))
+        print(colored(f"VAT with eps: {self.eps}, xi: {self.xi}, distance: {self.distance_func}", "green"))
 
     def forward(self, model: Model, x: torch.Tensor, **kwargs):
         with torch.no_grad():
@@ -210,3 +208,14 @@ def pred_histgram(tf_writter: SummaryWriter, preds: Tensor, epoch: int):
         tf_writter.add_histogram(
             tag=f"subhead_{subhead}_pred", values=preds[subhead] + 1, global_step=epoch
         )
+        # pred_distribution = pd.Series(preds[subhead]).value_counts()
+        # pred_max = pred_distribution.max() / len(preds[subhead])
+        # pred_min = pred_distribution.min() / len(preds[subhead])
+        # tf_writter.add_scalars(
+        #     f"distributions_{subhead}",
+        #     {
+        #         "max": pred_max,
+        #         "min": pred_min
+        #     },
+        #     global_step=epoch
+        # )

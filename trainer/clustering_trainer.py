@@ -1,14 +1,15 @@
 """
 This is the trainer general clustering trainer
 """
+import time
 from collections import OrderedDict
 from pathlib import Path
-from typing import List, Union, Dict
+from typing import List, Union, Dict, Tuple
 
-import matplotlib
 import torch
 from deepclustering import ModelMode
 from deepclustering.augment.pil_augment import SobelProcess
+from deepclustering.loss import KL_div
 from deepclustering.meters import AverageValueMeter, MeterInterface
 from deepclustering.model import Model, ZeroGradientBackwardStep
 from deepclustering.trainer import _Trainer
@@ -27,9 +28,70 @@ from deepclustering.utils.classification.assignment_mapping import (
 from torch import nn, Tensor
 from torch.utils.data import DataLoader
 
-from RegHelper import pred_histgram
+from RegHelper import pred_histgram, VATModuleInterface, MixUp
 
-matplotlib.use("agg")
+
+class VATReg:
+
+    def __init__(self, VAT_params: Dict[str, Union[str, float]] = {"eps": 10}, MeterInterface=None) -> None:
+        super().__init__()
+
+        self.VAT_params = VAT_params
+        self.vat_module = VATModuleInterface(VAT_params)
+        self.MeterInterface = MeterInterface
+        if self.MeterInterface:
+            self.MeterInterface.register_new_meter("train_adv", AverageValueMeter())
+
+    def _vat_regularization(self, model: Model, img: Tensor, head="B") -> Tuple[Tensor, Tensor, Tensor]:
+        vat_loss, adv_image, noise = self.vat_module(model, img, head=head)
+        if self.MeterInterface:
+            self.MeterInterface["train_adv"].add(vat_loss.item())
+        return vat_loss, adv_image, noise
+
+
+class GeoReg:
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.kl_div = KL_div(reduce=True)
+
+    def _geo_regularization(self, tf1_pred_simplex, tf2_pred_simplex) -> Tensor:
+        """
+        :param tf1_pred_simplex: basic
+        :param tf2_pred_simplex: advanced
+        :return:
+        """
+        assert (
+                assert_list(simplex, tf1_pred_simplex)
+                and assert_list(simplex, tf2_pred_simplex)
+                and tf1_pred_simplex.__len__() == tf2_pred_simplex.__len__()
+        ), f"Error on tf1 and tf2 predictions."
+        batch_loss: List[torch.Tensor] = []  # type: ignore
+        for subhead in range(tf1_pred_simplex.__len__()):
+            _loss = self.kl_div(
+                tf2_pred_simplex[subhead], tf1_pred_simplex[subhead].detach()
+            )
+            batch_loss.append(_loss)
+        batch_loss: torch.Tensor = sum(batch_loss) / len(batch_loss)  # type:ignore
+        return batch_loss
+
+
+class MixupReg:
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.mixup_module = MixUp(self.device, num_classes=self.model.arch_dict["output_k_B"])
+        self.kl_div = KL_div(reduce=True)
+
+    def _mixup_image_pred_index(self, tf1_image, tf1_pred, tf2_image, tf2_pred) -> Tuple[Tensor, Tensor, Tensor]:
+        """
+        There the input predictions are simplexes instead of list of simplexes
+        """
+        assert simplex(tf1_pred) and simplex(tf2_pred)
+        mixup_img, mixup_label, mixup_index = self.mixup_module(
+            tf1_image, tf1_pred, tf2_image, tf2_pred
+        )
+        return mixup_img, mixup_label, mixup_index
 
 
 class ClusteringGeneralTrainer(_Trainer):
@@ -134,6 +196,7 @@ class ClusteringGeneralTrainer(_Trainer):
             # save last.pth and/or best.pth based on current_score
             self.save_checkpoint(self.state_dict, epoch, current_score)
         # close tf.summary_writer
+        time.sleep(3)
         self.writer.close()
 
     def _train_loop(
@@ -156,7 +219,7 @@ class ClusteringGeneralTrainer(_Trainer):
         :param kwargs:
         :return: None
         """
-        # rubostness asserts
+        # robustness asserts
         assert isinstance(train_loader_B, DataLoader) and isinstance(
             train_loader_A, DataLoader
         )

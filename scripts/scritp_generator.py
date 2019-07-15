@@ -4,7 +4,7 @@ from pprint import pprint
 OPTIMIZED = False
 RESUME = False
 save_folder = "test"
-max_epoch = 2
+max_epoch = 1
 basic_cmd = (
     lambda config, trainer_name, save_dir, seed:
     f"python {'-O' if OPTIMIZED else ''} main.py Config={config} Trainer.name={trainer_name} Trainer.save_dir={save_folder}/{save_dir} Trainer.max_epoch={max_epoch} Seed={seed}"
@@ -18,12 +18,17 @@ trainer_names = [
     "iicvat",
     "iicgeovat",
     "iicgeovatmixup",
+    "iicgeovatreg",
+    "iicgeomixupreg",
+    "iicgeovatmixupreg",
     "imsat",
     "imsatvat",
+    "imsatgeo",
     "imsatmixup",
     "imsatvatmixup",
     "imsatvatgeo",
-    "imsatvatgeomixup",
+    "imsatgeomixup",
+    "imsatvatgeomixup"
 ]
 save_dirs = trainer_names
 datasets = ["mnist", "cifar", "svhn"]

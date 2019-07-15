@@ -2,19 +2,47 @@ from pathlib import Path
 from pprint import pprint
 from typing import Dict, Union, Type, Tuple
 
-from deepclustering.arch import _register_arch
 from deepclustering.manager import ConfigManger
 from deepclustering.model import Model, to_Apex
-from torch.utils.data import DataLoader
 from deepclustering.utils import fix_all_seed
+from torch.utils.data import DataLoader
 
 import trainer
-from resnet_50 import ResNet50
-
-_register_arch("resnet50", ResNet50)
 
 DATA_PATH = Path(".data")
 DATA_PATH.mkdir(exist_ok=True)
+
+trainer_mapping: Dict[str, Type[trainer.ClusteringGeneralTrainer]] = {
+    # using different transforms for iic
+    "iicgeo": trainer.IICGeoTrainer,  # the basic iic
+    "iicmixup": trainer.IICMixupTrainer,  # the basic IIC with mixup as the data augmentation
+    "iicvat": trainer.IICVATTrainer,  # the basic iic with VAT as the basic data augmentation
+    "iicgeovat": trainer.IICGeoVATTrainer,  # IIC with geo and vat as the data augmentation
+    "iicgeomixup": trainer.IICGeoMixupTrainer,  # IIC with geo and mixup as the data augmentation
+    "iicgeovatmixup": trainer.IICGeoVATMixupTrainer,  # IIC with geo, vat and mixup as the data augmentation
+    # using different regularization for iic
+    "iicgeovatreg": trainer.IICVAT_RegTrainer,  # iicgeo with VAT as a regularization
+    "iicgeomixupreg": trainer.IICMixup_RegTrainer,  # iicgeo with mixup as a regularization
+    "iicgeovatmixupreg": trainer.IICVATMixup_RegTrainer,  # iicgeo with VAT and mixup as a regularization
+    "iicgeovatvatreg": trainer.IICVATVAT_RegTrainer,  # iicgeo with VAT and VAT as regularization
+    # using different regularization for imsat
+    "imsat": trainer.IMSATAbstractTrainer,  # imsat without any regularization
+    "imsatvat": trainer.IMSATVATTrainer,  # imsat with vat
+    "imsatgeo": trainer.IMSATGeoTrainer,
+    "imsatmixup": trainer.IMSATMixupTrainer,  # imsat with mixup
+    "imsatvatmixup": trainer.IMSATVATMixupTrainer,  # imsat with vat + mixup
+    "imsatvatgeo": trainer.IMSATVATGeoTrainer,  # imsat with geo+vat
+    "imsatgeomixup": trainer.IMSATGeoMixup,
+    "imsatvatgeomixup": trainer.IMSATVATGeoMixupTrainer,  # imsat with geo vat and mixup
+}
+
+
+def get_trainer(
+        config: Dict[str, Union[float, int, dict]]
+) -> Type[trainer.ClusteringGeneralTrainer]:
+    trainer_class = trainer_mapping.get(config.get("Trainer").get("name"))
+    assert config.get("Trainer").get("name"), config.get("Trainer").get("name")
+    return trainer_class
 
 
 def get_dataloader(
@@ -86,7 +114,6 @@ def get_dataloader(
         img_transforms["tf2"],
         img_transforms["tf2"],
         img_transforms["tf2"],
-        img_transforms["tf2"],
     )
     train_loader_B = DatasetInterface(
         data_root=DATA_PATH,
@@ -98,7 +125,6 @@ def get_dataloader(
         img_transforms["tf2"],
         img_transforms["tf2"],
         img_transforms["tf2"],
-        img_transforms["tf2"],
     )
     val_loader = DatasetInterface(
         data_root=DATA_PATH,
@@ -106,29 +132,6 @@ def get_dataloader(
         **{k: v for k, v in merged_config["DataLoader"].items() if k != "transforms"}
     ).ParallelDataLoader(img_transforms["tf3"])
     return train_loader_A, train_loader_B, val_loader
-
-
-def get_trainer(
-        config: Dict[str, Union[float, int, dict]]
-) -> Type[trainer.ClusteringGeneralTrainer]:
-    assert config.get("Trainer").get("name"), config.get("Trainer").get("name")
-    trainer_mapping: Dict[str, Type[trainer.ClusteringGeneralTrainer]] = {
-        "iicgeo": trainer.IICGeoTrainer,  # the basic iic
-        "iicmixup": trainer.IICMixupTrainer,  # the basic IIC with mixup as the data augmentation
-        "iicvat": trainer.IICVATTrainer,  # the basic iic with VAT as the basic data augmentation
-        "iicgeovat": trainer.IICGeoVATTrainer,  # IIC with geo and vat as the data augmentation
-        "iicgeovatmixup": trainer.IICGeoVATMixupTrainer,  # IIC with geo, vat and mixup as the data augmentation
-        "imsat": trainer.IMSATAbstractTrainer,  # imsat without any regularization
-        "imsatvat": trainer.IMSATVATTrainer,  # imsat with vat
-        "imsatgeo": trainer.IMSATGeoTrainer,
-        "imsatmixup": trainer.IMSATMixupTrainer,  # imsat with mixup
-        "imsatvatmixup": trainer.IMSATVATMixupTrainer,  # imsat with vat + mixup
-        "imsatvatgeo": trainer.IMSATVATGeoTrainer,  # imsat with geo+vat
-        "imsatvatgeomixup": trainer.IMSATVATGeoMixupTrainer,  # imsat with geo vat and mixup
-    }
-    Trainer = trainer_mapping.get(config.get("Trainer").get("name").lower())
-    assert Trainer, config.get("Trainer").get("name")
-    return Trainer
 
 
 if __name__ == '__main__':
@@ -152,9 +155,10 @@ if __name__ == '__main__':
     # if use automatic precision mixture training
     model = to_Apex(model, opt_level=None, verbosity=0)
 
-    # get specific trainer
+    # get specific trainer class
     Trainer = get_trainer(merged_config)
 
+    # initialize the trainer
     clusteringTrainer = Trainer(
         model=model,
         train_loader_A=train_loader_A,
@@ -164,4 +168,5 @@ if __name__ == '__main__':
         **merged_config["Trainer"]
     )
     clusteringTrainer.start_training()
+    # do not use clean up
     # clusteringTrainer.clean_up(wait_time=3)

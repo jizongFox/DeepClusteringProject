@@ -63,15 +63,15 @@ class SVHNClusteringDatasetInterface(ClusterDatasetInterface):
 svhn_naive_transform = {
     # output size 32*32
     "tf1": transforms.Compose([
-        transforms.ToTensor(),
+        pil_augment.Img2Tensor(),
     ]),
     "tf2": transforms.Compose([
         pil_augment.RandomCrop(size=32, padding=2, ),
-        transforms.ToTensor(),
+        pil_augment.Img2Tensor(),
     ]
     ),
     "tf3": transforms.Compose([
-        transforms.ToTensor(),
+        pil_augment.Img2Tensor(),
     ]),
 }
 svhn_strong_transform = {
@@ -79,7 +79,7 @@ svhn_strong_transform = {
     "tf1": transforms.Compose([
         pil_augment.CenterCrop(size=(28, 28)),
         pil_augment.Resize(size=32, interpolation=PIL.Image.BILINEAR),
-        transforms.ToTensor()]),
+        pil_augment.Img2Tensor()]),
     "tf2": transforms.Compose([pil_augment.RandomApply(
         transforms=[transforms.RandomRotation(degrees=(-25.0, 25.0), resample=False, expand=False)],
         p=0.5),
@@ -93,10 +93,10 @@ svhn_strong_transform = {
             contrast=[0.6, 1.4],
             saturation=[0.6, 1.4],
             hue=[-0.125, 0.125]),
-        transforms.ToTensor()]),
+        pil_augment.Img2Tensor()]),
     "tf3": transforms.Compose([
         pil_augment.CenterCrop(size=(28, 28)),
         pil_augment.Resize(size=32, interpolation=PIL.Image.BILINEAR),
-        transforms.ToTensor()]),
+        pil_augment.Img2Tensor()]),
 }
 # ============================================================================================
