@@ -84,7 +84,7 @@ def get_dataloader(
     elif config.get("Config", DEFAULT_CONFIG).split("_")[-1].lower() == "svhn.yaml":
         from datasets import (
             svhn_naive_transform as naive_transforms,
-            strong_transforms as strong_transforms,
+            svhn_strong_transform as strong_transforms,
             SVHNClusteringDatasetInterface as DatasetInterface,
         )
         print("Checkout SVHN dataset with transforms:")
