@@ -3,10 +3,13 @@ This is the trainer general clustering trainer
 """
 import time
 from collections import OrderedDict
+from colorsys import hsv_to_rgb
 from pathlib import Path
 from typing import List, Union, Dict, Tuple
 
+import numpy as np
 import torch
+from PIL import Image
 from deepclustering import ModelMode
 from deepclustering.augment.pil_augment import SobelProcess
 from deepclustering.loss import KL_div
@@ -283,6 +286,7 @@ class ClusteringGeneralTrainer(_Trainer):
             val_loader: DataLoader = None,
             epoch: int = 0,
             mode: ModelMode = ModelMode.EVAL,
+            return_soft_predict=False,
             *args,
             **kwargs,
     ) -> float:
@@ -296,6 +300,13 @@ class ClusteringGeneralTrainer(_Trainer):
                             val_loader.dataset.__len__(),
                             dtype=torch.long,
                             device=self.device)
+        # soft_prediction initlization with shape (num_sub_heads, num_sample, num_classes)
+        if return_soft_predict:
+            soft_preds = torch.zeros(self.model.arch_dict["num_sub_heads"],
+                                     val_loader.dataset.__len__(),
+                                     self.model.arch_dict["output_k_B"],
+                                     dtype=torch.float,
+                                     device=torch.device("cpu"))  # I put it into cpu
         # target initialization with shape: (num_samples)
         target = torch.zeros(val_loader.dataset.__len__(), dtype=torch.long, device=self.device)
         # begin index
@@ -318,6 +329,8 @@ class ClusteringGeneralTrainer(_Trainer):
             for subhead in range(self.model.arch_dict["num_sub_heads"]):
                 # save predictions for each subhead for each batch
                 preds[subhead][bSlicer] = _pred[subhead].max(1)[1]
+                if return_soft_predict:
+                    soft_preds[subhead][bSlicer] = _pred[subhead]
             # save target for each batch
             target[bSlicer] = gt
             # update slice index
@@ -336,6 +349,11 @@ class ClusteringGeneralTrainer(_Trainer):
             subhead_accs.append(_acc)
             # record average acc
             self.METERINTERFACE.val_average_acc.add(_acc)
+
+            if return_soft_predict:
+                soft_preds[subhead][:, list(remap.values())] = soft_preds[subhead][:, list(remap.keys())]
+                assert torch.allclose(soft_preds[subhead].max(1)[1], reorder_pred.cpu())
+
         # record best acc
         self.METERINTERFACE.val_best_acc.add(max(subhead_accs))
         # record worst acc
@@ -348,6 +366,10 @@ class ClusteringGeneralTrainer(_Trainer):
         # using multithreads to call histogram interface of tensorboard.
         pred_histgram(self.writer, preds, epoch=epoch)
         # return the current score to save the best checkpoint.
+        if return_soft_predict:
+            return self.METERINTERFACE.val_best_acc.summary()["mean"], (
+                target.cpu(), soft_preds[np.argmax(subhead_accs)])  # type ignore
+
         return self.METERINTERFACE.val_best_acc.summary()["mean"]
 
     def _trainer_specific_loss(self, tf1_images: Tensor, tf2_images: Tensor, head_name: str):
@@ -362,5 +384,66 @@ class ClusteringGeneralTrainer(_Trainer):
         raise NotImplementedError
 
     # todo: add tsne plot
-    def inference(self, *args, **kwargs):
-        pass
+    def save_plot(self, *args, **kwargs):
+        def get_coord(probs, num_classes):
+            # computes coordinate for 1 sample based on probability distribution over c
+            coords_total = np.zeros(2, dtype=np.float32)
+            probs_sum = probs.sum()
+
+            fst_angle = 0.
+
+            for c in range(num_classes):
+                # compute x, y coordinates
+                coords = np.ones(2) * 2 * np.pi * (float(c) / num_classes) + fst_angle
+                coords[0] = np.sin(coords[0])
+                coords[1] = np.cos(coords[1])
+                coords_total += (probs[c] / probs_sum) * coords
+            return coords_total
+
+        GT_TO_ORDER = [2, 5, 3, 8, 6, 7, 0, 9, 1, 4]
+        assert self.checkpoint or self.best_score > 0
+        if self.checkpoint:
+            model_checkpoint = torch.load(Path(self.checkpoint) / "best.pth", map_location=torch.device("cpu"))
+        else:
+            model_checkpoint = torch.load(self.save_dir / "best.pth", map_location=torch.device("cpu"))
+        self.model.load_state_dict(model_checkpoint["model_state_dict"])
+        self.model.to(self.device)
+        with torch.no_grad():
+            best_score, (target, soft_preds) = self._eval_loop(val_loader=self.val_loader, epoch=100000,
+                                                               mode=ModelMode.EVAL,
+                                                               return_soft_predict=True)
+        print(f"best score: {best_score}")
+        soft_preds = soft_preds.numpy()
+        # render point cloud in GT order ---------------------------------------------
+        hues = torch.linspace(0.0, 1.0, self.model.arch_dict["output_k_B"] + 1)[0:-1]  # ignore last one
+        best_colours = [list((np.array(hsv_to_rgb(hue, 0.8, 0.8)) * 255.).astype(
+            np.uint8)) for hue in hues]
+
+        all_colours = [best_colours]
+
+        for colour_i, colours in enumerate(all_colours):
+            scale = 50  # [-1, 1] -> [-scale, scale]
+            border = 24  # averages are in the borders
+            point_half_side = 1  # size 2 * pixel_half_side + 1
+
+            half_border = int(border * 0.5)
+
+            image = np.ones((2 * (scale + border), 2 * (scale + border), 3),
+                            dtype=np.uint8) * 255
+
+            for i in range(len(soft_preds)):
+                # in range [-1, 1] -> [0, 2 * scale] -> [border, 2 * scale + border]
+                coord = get_coord(soft_preds[i, :], num_classes=self.model.arch_dict["output_k_B"])
+                coord = (coord * scale + scale).astype(np.int32)
+                coord += border
+                pt_start = coord - point_half_side
+                pt_end = coord + point_half_side
+
+                render_c = GT_TO_ORDER[target[i]]
+                colour = (np.array(colours[render_c])).astype(np.uint8)
+                image[pt_start[0]:pt_end[0], pt_start[1]:pt_end[1], :] = np.reshape(
+                    colour, (1, 1, 3))
+
+            # save to out_dir ---------------------------
+            img = Image.fromarray(image)
+            img.save(self.save_dir / "best_tsne.png")

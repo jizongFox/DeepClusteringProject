@@ -167,6 +167,7 @@ if __name__ == '__main__':
         config=merged_config,
         **merged_config["Trainer"]
     )
-    clusteringTrainer.start_training()
+    # clusteringTrainer.start_training()
+    clusteringTrainer.save_plot()
     # do not use clean up
     # clusteringTrainer.clean_up(wait_time=3)
