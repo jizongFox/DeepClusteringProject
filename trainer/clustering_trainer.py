@@ -360,3 +360,7 @@ class ClusteringGeneralTrainer(_Trainer):
         """
 
         raise NotImplementedError
+
+    # todo: add tsne plot
+    def inference(self, *args, **kwargs):
+        pass
