@@ -63,6 +63,7 @@ def get_dataloader(
         print("Checkout CIFAR10 dataset with transforms:")
         train_split_partition = ["train", "val"]
         val_split_partition = ["train", "val"]
+        dataset_name = "cifar"
     elif config.get("Config", DEFAULT_CONFIG).split("_")[-1].lower() == "mnist.yaml":
         from datasets import (
             mnist_naive_transform as naive_transforms,
@@ -72,6 +73,7 @@ def get_dataloader(
         print("Checkout MNIST dataset with transforms:")
         train_split_partition = ["train", "val"]
         val_split_partition = ["train", "val"]
+        dataset_name = "mnist"
     elif config.get("Config", DEFAULT_CONFIG).split("_")[-1].lower() == "stl10.yaml":
         from datasets import (
             stl10_strong_transform as strong_transforms,
@@ -81,15 +83,17 @@ def get_dataloader(
         train_split_partition = ["train", "test", "train+unlabeled"]
         val_split_partition = ["train", "test"]
         print("Checkout STL-10 dataset with transforms:")
+        dataset_name = "stl10"
     elif config.get("Config", DEFAULT_CONFIG).split("_")[-1].lower() == "svhn.yaml":
         from datasets import (
             svhn_naive_transform as naive_transforms,
-            strong_transforms as strong_transforms,
+            svhn_strong_transform as strong_transforms,
             SVHNClusteringDatasetInterface as DatasetInterface,
         )
         print("Checkout SVHN dataset with transforms:")
         train_split_partition = ["train", "test"]
         val_split_partition = ["train", "test"]
+        dataset_name = "svhn"
     else:
         raise NotImplementedError(
             config.get("Config", DEFAULT_CONFIG).split("_")[-1].lower()
@@ -115,6 +119,7 @@ def get_dataloader(
         img_transforms["tf2"],
         img_transforms["tf2"],
     )
+    train_loader_A.dataset_name = dataset_name
     train_loader_B = DatasetInterface(
         data_root=DATA_PATH,
         split_partitions=train_split_partition,
@@ -126,11 +131,15 @@ def get_dataloader(
         img_transforms["tf2"],
         img_transforms["tf2"],
     )
+    train_loader_B.dataset_name = dataset_name
+    val_dict = {k: v for k, v in merged_config["DataLoader"].items() if k != "transforms"}
+    val_dict["shuffle"] = False
     val_loader = DatasetInterface(
         data_root=DATA_PATH,
         split_partitions=val_split_partition,
-        **{k: v for k, v in merged_config["DataLoader"].items() if k != "transforms"}
+        **val_dict
     ).ParallelDataLoader(img_transforms["tf3"])
+    val_loader.dataset_name = dataset_name
     return train_loader_A, train_loader_B, val_loader
 
 
@@ -167,7 +176,8 @@ if __name__ == '__main__':
         config=merged_config,
         **merged_config["Trainer"]
     )
+    clusteringTrainer.checkpoint_identifier = "best.pth"
     # clusteringTrainer.start_training()
-    clusteringTrainer.save_plot()
+    clusteringTrainer.draw_tsne(val_loader)
     # do not use clean up
     # clusteringTrainer.clean_up(wait_time=3)
