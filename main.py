@@ -34,6 +34,7 @@ trainer_mapping: Dict[str, Type[trainer.ClusteringGeneralTrainer]] = {
     "imsatvatgeo": trainer.IMSATVATGeoTrainer,  # imsat with geo+vat
     "imsatgeomixup": trainer.IMSATGeoMixup,
     "imsatvatgeomixup": trainer.IMSATVATGeoMixupTrainer,  # imsat with geo vat and mixup
+    "imsatvatiicgeo": trainer.IMSATVATIICGeo  # using IMSATVAT with IIC regularization
 }
 
 

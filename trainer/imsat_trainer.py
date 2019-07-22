@@ -1,10 +1,11 @@
 __all__ = ["IMSATAbstractTrainer", "IMSATVATGeoMixupTrainer", "IMSATVATGeoTrainer", "IMSATVATTrainer",
-           "IMSATMixupTrainer", "IMSATVATMixupTrainer", "IMSATGeoTrainer", "IMSATGeoMixup"]
+           "IMSATMixupTrainer", "IMSATVATMixupTrainer", "IMSATGeoTrainer", "IMSATGeoMixup", "IMSATVATIICGeo"]
 from typing import List, Union, Dict
 
 import torch
 from deepclustering.loss.IMSAT_loss import MultualInformaton_IMSAT
 from deepclustering.loss.loss import KL_div
+from deepclustering.loss.IID_losses import IIDLoss
 from deepclustering.meters import AverageValueMeter
 from deepclustering.model import Model
 from deepclustering.utils import (
@@ -428,3 +429,56 @@ class IMSATVATGeoMixupTrainer(IMSATVATMixupTrainer, GeoReg):
         geo_loss = self._geo_regularization(img_pred_simplex, tf_pred_simplex)
         # vat: geo: mixup= 1: 1: 1 for the sake for simplification.
         return vat_mixup_loss + geo_loss
+
+
+# IMSATVAT+IICGeo
+class IMSATVATIICGeo(IMSATVATTrainer):
+    """
+    This is to add IIC with IMSAT. IIC here is a regularization
+    """
+
+    def __init__(self, model: Model, train_loader_A: DataLoader, train_loader_B: DataLoader, val_loader: DataLoader,
+                 max_epoch: int = 100, save_dir: str = "IMSATAbstractTrainer", checkpoint_path: str = None,
+                 device="cpu", head_control_params: Dict[str, int] = {"B": 1}, use_sobel: bool = False,
+                 config: dict = None, MI_params: dict = {"mu": 4}, VAT_params: dict = {"eps": 1}, **kwargs) -> None:
+        super().__init__(model, train_loader_A, train_loader_B, val_loader, max_epoch, save_dir, checkpoint_path,
+                         device, head_control_params, use_sobel, config, MI_params, VAT_params, **kwargs)
+        self.IIC_loss = IIDLoss()
+
+    def __init_meters__(self) -> List[Union[str, List[str]]]:
+        columns_to_draw = super().__init_meters__()
+        self.METERINTERFACE.register_new_meter("train_head_A", AverageValueMeter())
+        self.METERINTERFACE.register_new_meter("train_head_B", AverageValueMeter())
+        columns_to_draw = ["train_head_B_mean"] + columns_to_draw
+        return columns_to_draw
+
+    @property
+    def _training_report_dict(self):
+        report_dict = super(IMSATVATIICGeo, self)._training_report_dict
+        report_dict.update({
+            "train_head_A": self.METERINTERFACE["train_head_A"].summary()["mean"],
+            "train_head_B": self.METERINTERFACE["train_head_B"].summary()["mean"]
+        })
+        return dict_filter(report_dict)
+
+    def _regulaze(
+            self,
+            images: Tensor,
+            tf_images: Tensor,
+            img_pred_simplex: List[Tensor],
+            head_name="B",
+    ) -> Tensor:
+        vat_loss = super()._regulaze(images, tf_images, img_pred_simplex, head_name)
+        tf_img_pred_simplex = self.model.torchnet(tf_images, head=head_name)
+        assert_list(simplex, tf_img_pred_simplex)
+
+        # IICloss
+        batch_loss: List[torch.Tensor] = []  # type: ignore
+        for subhead in range(img_pred_simplex.__len__()):
+            _loss, _loss_no_lambda = self.IIC_loss(
+                img_pred_simplex[subhead], tf_img_pred_simplex[subhead]
+            )
+            batch_loss.append(_loss)
+        batch_loss: torch.Tensor = sum(batch_loss) / len(batch_loss)  # type:ignore
+        self.METERINTERFACE[f"train_head_{head_name}"].add(-batch_loss.item())  # type: ignore
+        return batch_loss + vat_loss
