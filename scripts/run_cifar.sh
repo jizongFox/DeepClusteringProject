@@ -9,6 +9,9 @@ cd ${PROJECT_PATH}
 source $WRAPPER_PATH
 cd ${PROJECT_PATH}
 set -e
+
+
+account=def-mpederso
 time=12
 transforms=strong
 main_dir="07_15_benchmark/${transforms}"
@@ -16,6 +19,8 @@ vat_eps=10
 iic_vat_name=kl
 max_epoch=1000
 seed=1
+
+
 declare -a StringArray=(
 "python -O main.py Config=config/config_CIFAR.yaml Trainer.name=iicgeo Trainer.save_dir=${main_dir}/cifar_${seed}/iicgeo Trainer.max_epoch=${max_epoch} Seed=${seed} DataLoader.transforms=${transforms} #Trainer.checkpoint_path=runs/${main_dir}/cifar_${seed}/iicgeo" \
 "python -O main.py Config=config/config_CIFAR.yaml Trainer.name=iicmixup Trainer.save_dir=${main_dir}/cifar_${seed}/iicmixup Trainer.max_epoch=${max_epoch} Seed=${seed} DataLoader.transforms=${transforms} #Trainer.checkpoint_path=runs/${main_dir}/cifar_${seed}/iicmixup" \
@@ -44,11 +49,12 @@ declare -a StringArray=(
 "python -O main.py Config=config/config_CIFAR.yaml Trainer.name=imsatvatgeo Trainer.save_dir=${main_dir}/cifar_${seed}/imsatvatgeo Trainer.max_epoch=${max_epoch} Seed=${seed} DataLoader.transforms=${transforms} #Trainer.checkpoint_path=runs/${main_dir}/cifar_${seed}/imsatvatgeo" \
 "python -O main.py Config=config/config_CIFAR.yaml Trainer.name=imsatgeomixup Trainer.save_dir=${main_dir}/cifar_${seed}/imsatgeomixup Trainer.max_epoch=${max_epoch} Seed=${seed} DataLoader.transforms=${transforms} #Trainer.checkpoint_path=runs/${main_dir}/cifar_${seed}/imsatgeomixup" \
 "python -O main.py Config=config/config_CIFAR.yaml Trainer.name=imsatvatgeomixup Trainer.save_dir=${main_dir}/cifar_${seed}/imsatvatgeomixup Trainer.max_epoch=${max_epoch} Seed=${seed} DataLoader.transforms=${transforms} #Trainer.checkpoint_path=runs/${main_dir}/cifar_${seed}/imsatvatgeomixup" \
+
 )
 #
 for cmd in "${StringArray[@]}"
 do
 echo ${cmd}
-wrapper "${time}" "${cmd}"
+wrapper "${time}" "${account}" "${cmd}"
 # ${cmd}
 done

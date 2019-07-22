@@ -9,13 +9,16 @@ cd ${PROJECT_PATH}
 source $WRAPPER_PATH
 cd ${PROJECT_PATH}
 set -e
+
+
+account=def-mpederso
 time=12
 transforms=strong
 main_dir="07_15_benchmark/${transforms}"
-vat_eps=10
-iic_vat_name=kl
 max_epoch=1000
 seed=1
+
+
 declare -a StringArray=(
 "python -O main.py Config=config/config_SVHN.yaml Trainer.name=iicgeo Trainer.save_dir=${main_dir}/svhn_${seed}/iicgeo Trainer.max_epoch=${max_epoch} Seed=${seed} DataLoader.transforms=${transforms} #Trainer.checkpoint_path=runs/${main_dir}/svhn_${seed}/iicgeo" \
 "python -O main.py Config=config/config_SVHN.yaml Trainer.name=iicmixup Trainer.save_dir=${main_dir}/svhn_${seed}/iicmixup Trainer.max_epoch=${max_epoch} Seed=${seed} DataLoader.transforms=${transforms} #Trainer.checkpoint_path=runs/${main_dir}/svhn_${seed}/iicmixup" \
@@ -48,6 +51,6 @@ declare -a StringArray=(
 for cmd in "${StringArray[@]}"
 do
 echo ${cmd}
-wrapper "${time}" "${cmd}"
+wrapper "${time}" "${account}" "${cmd}"
 # ${cmd}
 done
