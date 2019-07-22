@@ -97,6 +97,8 @@ class CIFAR10(data.Dataset):
 
         self._load_meta()
 
+        self.debug: bool = os.environ.get("PYDEBUG", False) == "1"
+
     def _load_meta(self):
         path = os.path.join(self.root, self.base_folder, self.meta["filename"])
         if not check_integrity(path, self.meta["md5"]):
@@ -135,6 +137,8 @@ class CIFAR10(data.Dataset):
         return img, target
 
     def __len__(self):
+        if self.debug:
+            return int(len(self.data) / 100)
         return int(len(self.data))
 
     def _check_integrity(self):

@@ -1,4 +1,5 @@
-__all__ = ["IICMixup_RegTrainer", "IICGeoTrainer", "IICVATMixup_RegTrainer", "IICVAT_RegTrainer", "IICVATVAT_RegTrainer"]
+__all__ = ["IICMixup_RegTrainer", "IICGeoTrainer", "IICVATMixup_RegTrainer", "IICVAT_RegTrainer",
+           "IICVATVAT_RegTrainer"]
 from typing import Union, Dict, List
 
 from deepclustering.meters import AverageValueMeter

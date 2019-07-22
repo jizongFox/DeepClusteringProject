@@ -194,7 +194,7 @@ class ClusteringGeneralTrainer(_Trainer):
             # draw traing curves
             self.drawer.draw(SUMMARY)
             # save last.pth and/or best.pth based on current_score
-            self.save_checkpoint(self.state_dict, epoch, current_score)
+            self.save_checkpoint(self.state_dict(), epoch, current_score)
         # close tf.summary_writer
         time.sleep(3)
         self.writer.close()
