@@ -3,13 +3,11 @@ This is the trainer general clustering trainer
 """
 import time
 from collections import OrderedDict
-from colorsys import hsv_to_rgb
 from pathlib import Path
 from typing import List, Union, Dict, Tuple
 
 import numpy as np
 import torch
-from PIL import Image
 from deepclustering import ModelMode
 from deepclustering.augment.pil_augment import SobelProcess
 from deepclustering.loss import KL_div
@@ -382,138 +380,3 @@ class ClusteringGeneralTrainer(_Trainer):
         """
 
         raise NotImplementedError
-
-    # using IIC method to show the evaluation, only for MNIST dataset
-    def save_plot(self):
-        assert self.val_loader.dataset_name == "mnist", \
-            f"save tsne plot is only implemented for MNIST dataset, given {self.val_loader.dataset_name}."
-
-        def get_coord(probs, num_classes):
-            # computes coordinate for 1 sample based on probability distribution over c
-            coords_total = np.zeros(2, dtype=np.float32)
-            probs_sum = probs.sum()
-
-            fst_angle = 0.
-
-            for c in range(num_classes):
-                # compute x, y coordinates
-                coords = np.ones(2) * 2 * np.pi * (float(c) / num_classes) + fst_angle
-                coords[0] = np.sin(coords[0])
-                coords[1] = np.cos(coords[1])
-                coords_total += (probs[c] / probs_sum) * coords
-            return coords_total
-
-        GT_TO_ORDER = [2, 5, 3, 8, 6, 7, 0, 9, 1, 4]
-        with torch.no_grad():
-            best_score, (target, soft_preds) = self._eval_loop(val_loader=self.val_loader, epoch=100000,
-                                                               mode=ModelMode.EVAL,
-                                                               return_soft_predict=True)
-        print(f"best score: {best_score}")
-        soft_preds = soft_preds.numpy()
-        average_images = self.plot_cluster_average_images(self.val_loader, soft_preds)
-
-        # render point cloud in GT order ---------------------------------------------
-        hues = torch.linspace(0.0, 1.0, self.model.arch_dict["output_k_B"] + 1)[0:-1]  # ignore last one
-        best_colours = [list((np.array(hsv_to_rgb(hue, 0.8, 0.8)) * 255.).astype(
-            np.uint8)) for hue in hues]
-
-        all_colours = [best_colours]
-
-        for colour_i, colours in enumerate(all_colours):
-            scale = 50  # [-1, 1] -> [-scale, scale]
-            border = 24  # averages are in the borders
-            point_half_side = 1  # size 2 * pixel_half_side + 1
-
-            half_border = int(border * 0.5)
-
-            image = np.ones((2 * (scale + border), 2 * (scale + border), 3),
-                            dtype=np.uint8) * 255
-
-            for i in range(len(soft_preds)):
-                # in range [-1, 1] -> [0, 2 * scale] -> [border, 2 * scale + border]
-                coord = get_coord(soft_preds[i, :], num_classes=self.model.arch_dict["output_k_B"])
-                coord = (coord * 0.75 * scale + scale).astype(np.int32)
-                coord += border
-                pt_start = coord - point_half_side
-                pt_end = coord + point_half_side
-
-                render_c = GT_TO_ORDER[target[i]]
-                colour = (np.array(colours[render_c])).astype(np.uint8)
-                image[pt_start[0]:pt_end[0], pt_start[1]:pt_end[1], :] = np.reshape(
-                    colour, (1, 1, 3))
-            # add average images
-            for i in range(10):
-                pred = np.zeros(10)
-                pred[i] = 1
-                coord = get_coord(pred, 10)
-                coord = (coord * 1.2 * scale + scale).astype(np.int32)
-                coord += border
-                pt_start = coord - half_border
-                pt_end = coord + half_border
-                image[pt_start[0]:pt_end[0], pt_start[1]:pt_end[1], :] = average_images[GT_TO_ORDER[i]].unsqueeze(
-                    2).repeat(
-                    [1, 1, 3]) * 255.0
-
-            # save to out_dir ---------------------------
-            img = Image.fromarray(image)
-            img.save(self.save_dir / f"best_tsne_{colour_i}.png")
-
-    @staticmethod
-    def plot_cluster_average_images(val_loader, soft_pred):
-        assert val_loader.dataset_name == "mnist", \
-            f"save tsne plot is only implemented for MNIST dataset, given {val_loader.dataset_name}."
-
-        average_images = [torch.zeros(24, 24) for _ in range(10)]
-
-        counter = 0
-        for image_labels in tqdm_(val_loader):
-            images, gt, *_ = list(zip(*image_labels))
-            # only take the tf3 image and gts, put them to self.device
-            images, gt = images[0], gt[0]
-            for i, img in enumerate(images):
-                average_images[soft_pred[counter + i].argmax()] += img.squeeze() * soft_pred[counter + i].max()
-
-            counter += len(images)
-        assert counter == val_loader.dataset.__len__()
-        average_images = [average_image / (counter / 10) for average_image in average_images]
-        return average_images
-
-    def draw_tsne(self, val_loader, epoch=0):
-        assert val_loader.dataset_name == "mnist", \
-            f"save tsne plot is only implemented for MNIST dataset, given {self.val_loader.dataset_name}."
-        from deepclustering.arch.classification.IIC.net6c_two_head import ClusterNet6cTwoHead
-        assert isinstance(self.model.torchnet,
-                          ClusterNet6cTwoHead), f"self.model must be ClusterNet6cTwoHead, given {self.model}"
-
-        def _draw_features_and_targets(val_loader):
-            print(f"Feature generating.")
-            features = []
-            targets = []
-
-            def hook(module, input, output):
-                features.append(output.cpu().detach())
-
-            handler = self.model.torchnet.trunk.register_forward_hook(hook)
-            for batch, image_labels in enumerate(val_loader):
-                images, gt, *_ = list(zip(*image_labels))
-                # only take the tf3 image and gts, put them to self.device
-                images, gt = images[0].to(self.device), gt[0].to(self.device)
-                # if use sobel filter
-                if self.use_sobel:
-                    images = self.sobel(images)
-                # using default head_B for inference, _pred should be a list of simplex by default.
-                _pred = self.model.torchnet(images, head="B")
-                targets.append(gt.cpu())
-                if len(targets) > 20:
-                    break
-            features = torch.cat(features, 0)
-            targets = torch.cat(targets, 0)
-            handler.remove()
-            print("Feature Generation end.")
-            return features, targets
-
-        features, targets = _draw_features_and_targets(val_loader)
-        from deepclustering.decorator import TimeBlock
-        with TimeBlock() as time:
-            self.writer.add_embedding(mat=features, metadata=targets, global_step=epoch)
-        print(time.cost)

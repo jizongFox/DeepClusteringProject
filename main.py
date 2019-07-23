@@ -38,22 +38,17 @@ trainer_mapping: Dict[str, Type[trainer.ClusteringGeneralTrainer]] = {
 }
 
 
-def get_trainer(
-        config: Dict[str, Union[float, int, dict]]
-) -> Type[trainer.ClusteringGeneralTrainer]:
+def get_trainer(config: Dict[str, Union[float, int, dict]]) -> Type[trainer.ClusteringGeneralTrainer]:
     trainer_class = trainer_mapping.get(config.get("Trainer").get("name"))
     assert config.get("Trainer").get("name"), config.get("Trainer").get("name")
     return trainer_class
 
 
-def get_dataloader(
-        config: Dict[str, Union[float, int, dict, str]]
-) -> Tuple[DataLoader, DataLoader, DataLoader]:
+def get_dataloader(config: Dict[str, Union[float, int, dict, str]], DEFAULT_CONFIG: str) -> Tuple[
+    DataLoader, DataLoader, DataLoader]:
     """
     We will use config.Config as the input yaml file to select dataset
     config.DataLoader.transforms (naive or strong) to choose data augmentation for GEO
-    :param config:
-    :return:
     """
     if config.get("Config", DEFAULT_CONFIG).split("_")[-1].lower() == "cifar.yaml":
         from datasets import (
@@ -112,7 +107,7 @@ def get_dataloader(
     train_loader_A = DatasetInterface(
         data_root=DATA_PATH,
         split_partitions=train_split_partition,
-        **{k: v for k, v in merged_config["DataLoader"].items() if k != "transforms"}
+        **{k: v for k, v in config["DataLoader"].items() if k != "transforms"}
     ).ParallelDataLoader(
         img_transforms["tf1"],
         img_transforms["tf2"],
@@ -120,11 +115,12 @@ def get_dataloader(
         img_transforms["tf2"],
         img_transforms["tf2"],
     )
-    train_loader_A.dataset_name = dataset_name
+    setattr(train_loader_A, "dataset_name", dataset_name)
+
     train_loader_B = DatasetInterface(
         data_root=DATA_PATH,
         split_partitions=train_split_partition,
-        **{k: v for k, v in merged_config["DataLoader"].items() if k != "transforms"}
+        **{k: v for k, v in config["DataLoader"].items() if k != "transforms"}
     ).ParallelDataLoader(
         img_transforms["tf1"],
         img_transforms["tf2"],
@@ -132,29 +128,29 @@ def get_dataloader(
         img_transforms["tf2"],
         img_transforms["tf2"],
     )
-    train_loader_B.dataset_name = dataset_name
-    val_dict = {k: v for k, v in merged_config["DataLoader"].items() if k != "transforms"}
+    setattr(train_loader_B, "dataset_name", dataset_name)
+
+    val_dict = {k: v for k, v in config["DataLoader"].items() if k != "transforms"}
     val_dict["shuffle"] = False
     val_loader = DatasetInterface(
         data_root=DATA_PATH,
         split_partitions=val_split_partition,
         **val_dict
     ).ParallelDataLoader(img_transforms["tf3"])
-    val_loader.dataset_name = dataset_name
+    setattr(val_loader, "dataset_name", dataset_name)
+
     return train_loader_A, train_loader_B, val_loader
 
 
 if __name__ == '__main__':
     DEFAULT_CONFIG = "config/config_MNIST.yaml"
-    merged_config = ConfigManger(
-        DEFAULT_CONFIG_PATH=DEFAULT_CONFIG, verbose=True, integrality_check=True
-    ).config
+    merged_config = ConfigManger(DEFAULT_CONFIG_PATH=DEFAULT_CONFIG, verbose=True, integrality_check=True).config
 
     # for reproducibility
     fix_all_seed(merged_config.get("Seed", 0))
 
     # get train loaders and validation loader
-    train_loader_A, train_loader_B, val_loader = get_dataloader(merged_config)
+    train_loader_A, train_loader_B, val_loader = get_dataloader(merged_config, DEFAULT_CONFIG)
 
     # create model:
     model = Model(
@@ -177,8 +173,7 @@ if __name__ == '__main__':
         config=merged_config,
         **merged_config["Trainer"]
     )
-    clusteringTrainer.checkpoint_identifier = "best.pth"
-    # clusteringTrainer.start_training()
-    clusteringTrainer.draw_tsne(val_loader)
+    clusteringTrainer.start_training()
+    # clusteringTrainer.draw_tsne(val_loader)
     # do not use clean up
     # clusteringTrainer.clean_up(wait_time=3)
