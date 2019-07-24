@@ -227,7 +227,7 @@ class AnalyzeInference(ClusteringGeneralTrainer):
                 feature, gt = feature.to(self.device), gt.to(self.device)
                 pred = linearnet(feature)
                 linear_meters["val_acc"].add(pred.max(1)[1], gt)
-                report_dict = {"val_acc": linear_meters["train_acc"].summary()["acc"]}
+                report_dict = {"val_acc": linear_meters["val_acc"].summary()["acc"]}
                 val_loader_.set_postfix(report_dict)
             print(f"Validating epoch {epoch}: {nice_dict(report_dict)} ")
             return linear_meters["val_acc"].summary()["acc"]
