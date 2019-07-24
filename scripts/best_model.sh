@@ -28,8 +28,8 @@ Trainer.max_epoch=${max_epoch} Seed=${seed} Trainer.VAT_params.name=kl DataLoade
 for cmd in "${StringArray[@]}"
 do
 echo ${cmd}
-#wrapper "${time}" "${account}" "${cmd}"
- ${cmd}
+wrapper "${time}" "${account}" "${cmd}"
+# ${cmd}
 done
 
 
