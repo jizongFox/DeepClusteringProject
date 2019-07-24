@@ -6,6 +6,7 @@ from collections import OrderedDict
 from pathlib import Path
 from typing import List, Union, Dict, Tuple
 
+import numpy as np
 import torch
 from deepclustering import ModelMode
 from deepclustering.augment.pil_augment import SobelProcess
@@ -283,6 +284,7 @@ class ClusteringGeneralTrainer(_Trainer):
             val_loader: DataLoader = None,
             epoch: int = 0,
             mode: ModelMode = ModelMode.EVAL,
+            return_soft_predict=False,
             *args,
             **kwargs,
     ) -> float:
@@ -296,6 +298,13 @@ class ClusteringGeneralTrainer(_Trainer):
                             val_loader.dataset.__len__(),
                             dtype=torch.long,
                             device=self.device)
+        # soft_prediction initialization with shape (num_sub_heads, num_sample, num_classes)
+        if return_soft_predict:
+            soft_preds = torch.zeros(self.model.arch_dict["num_sub_heads"],
+                                     val_loader.dataset.__len__(),
+                                     self.model.arch_dict["output_k_B"],
+                                     dtype=torch.float,
+                                     device=torch.device("cpu"))  # I put it into cpu
         # target initialization with shape: (num_samples)
         target = torch.zeros(val_loader.dataset.__len__(), dtype=torch.long, device=self.device)
         # begin index
@@ -318,6 +327,8 @@ class ClusteringGeneralTrainer(_Trainer):
             for subhead in range(self.model.arch_dict["num_sub_heads"]):
                 # save predictions for each subhead for each batch
                 preds[subhead][bSlicer] = _pred[subhead].max(1)[1]
+                if return_soft_predict:
+                    soft_preds[subhead][bSlicer] = _pred[subhead]
             # save target for each batch
             target[bSlicer] = gt
             # update slice index
@@ -336,6 +347,11 @@ class ClusteringGeneralTrainer(_Trainer):
             subhead_accs.append(_acc)
             # record average acc
             self.METERINTERFACE.val_average_acc.add(_acc)
+
+            if return_soft_predict:
+                soft_preds[subhead][:, list(remap.values())] = soft_preds[subhead][:, list(remap.keys())]
+                assert torch.allclose(soft_preds[subhead].max(1)[1], reorder_pred.cpu())
+
         # record best acc
         self.METERINTERFACE.val_best_acc.add(max(subhead_accs))
         # record worst acc
@@ -348,6 +364,10 @@ class ClusteringGeneralTrainer(_Trainer):
         # using multithreads to call histogram interface of tensorboard.
         pred_histgram(self.writer, preds, epoch=epoch)
         # return the current score to save the best checkpoint.
+        if return_soft_predict:
+            return self.METERINTERFACE.val_best_acc.summary()["mean"], (
+                target.cpu(), soft_preds[np.argmax(subhead_accs)])  # type ignore
+
         return self.METERINTERFACE.val_best_acc.summary()["mean"]
 
     def _trainer_specific_loss(self, tf1_images: Tensor, tf2_images: Tensor, head_name: str):
@@ -360,7 +380,3 @@ class ClusteringGeneralTrainer(_Trainer):
         """
 
         raise NotImplementedError
-
-    # todo: add tsne plot
-    def inference(self, *args, **kwargs):
-        pass
