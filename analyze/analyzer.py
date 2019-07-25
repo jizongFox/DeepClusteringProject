@@ -1,5 +1,6 @@
 from colorsys import hsv_to_rgb
 from copy import deepcopy as dcp
+from pathlib import Path
 from typing import Tuple, Dict
 
 import PIL
@@ -282,6 +283,10 @@ class AnalyzeInference(ClusteringGeneralTrainer):
             drawer.draw(linear_meters.summary())
 
     def supervised_training(self, use_pretrain=True, lr=1e-3, data_aug=False):
+        # load the best checkpoint
+        self.load_checkpoint(torch.load(str(Path(self.checkpoint)/self.checkpoint_identifier),map_location=torch.device("cpu")))
+        self.model.to(self.device)
+
         from torchvision import transforms
         transform_train = transforms.Compose([
             pil_augment.CenterCrop(size=(20, 20)),

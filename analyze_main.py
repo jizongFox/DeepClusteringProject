@@ -92,11 +92,11 @@ if __name__ == '__main__':
     else:
         raise NotImplementedError("Only support mnist, cifar, and svhn.")
     """
-    """ # supervised training part.
+    # supervised training part.
     clusteringTrainer.supervised_training(use_pretrain=True, lr=1e-4, data_aug=True)
     clusteringTrainer.supervised_training(use_pretrain=False, lr=1e-3, data_aug=True)
     clusteringTrainer.supervised_training(use_pretrain=True, lr=1e-4, data_aug=False)
     clusteringTrainer.supervised_training(use_pretrain=False, lr=1e-3, data_aug=False)
-    """
-    clusteringTrainer.save_plot()
-    clusteringTrainer.draw_tsne(5000)
+    # """
+    # clusteringTrainer.save_plot()
+    # clusteringTrainer.draw_tsne(5000)
