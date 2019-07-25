@@ -6,11 +6,13 @@ import numpy as np
 import torch
 from PIL import Image
 from deepclustering import ModelMode
+from deepclustering.loss import KL_div
 from deepclustering.meters import MeterInterface, ConfusionMatrix, AverageValueMeter
 from deepclustering.model import Model
-from deepclustering.utils import tqdm_, nice_dict
+from deepclustering.utils import tqdm_, nice_dict, class2one_hot
 from deepclustering.utils.classification.assignment_mapping import hungarian_match, flat_acc
 from deepclustering.writer import DrawCSV2
+from deepclustering.arch import weights_init
 from torch import Tensor, nn
 from torch.utils.data import DataLoader, TensorDataset
 
@@ -194,7 +196,7 @@ class AnalyzeInference(ClusteringGeneralTrainer):
         print(f"Feature exaction ends with acc: {acc:.4f}")
         return images, features, targets
 
-    def linear_retraining(self, conv_name: str, lr = 1e-3):
+    def linear_retraining(self, conv_name: str, lr=1e-3):
         """
         Calling point to execute retraining
         :param conv_name:
@@ -270,4 +272,84 @@ class AnalyzeInference(ClusteringGeneralTrainer):
             _ = _linear_eval_loop(Val_DataLoader, epoch)
             linear_meters.step()
             linear_meters.summary().to_csv(self.save_dir / f"retraining_from_{conv_name}.csv")
+            drawer.draw(linear_meters.summary())
+
+    def supervised_training(self, use_pretrain=True):
+        self.kl = KL_div(reduce=True)
+
+        def _sup_train_loop(train_loader, epoch):
+            self.model.train()
+            train_loader_ = tqdm_(train_loader)
+            for batch_num, (image_gt) in enumerate(train_loader_):
+                image, gt = zip(*image_gt)
+                image = image[0].to(self.device)
+                gt = gt[0].to(self.device)
+
+                if self.use_sobel:
+                    image = self.sobel(image)
+
+                pred = self.model.torchnet(image)[0]
+                loss = self.kl(pred, class2one_hot(gt, 10).float())
+                self.model.zero_grad()
+                loss.backward()
+                self.model.step()
+                linear_meters["train_loss"].add(loss.item())
+                linear_meters["train_acc"].add(pred.max(1)[1], gt)
+                report_dict = {
+                    "tra_acc": linear_meters["train_acc"].summary()["acc"],
+                    "loss": linear_meters["train_loss"].summary()["mean"],
+                }
+                train_loader_.set_postfix(report_dict)
+
+            print(f"  Training epoch {epoch}: {nice_dict(report_dict)} ")
+
+        def _sup_eval_loop(val_loader, epoch) -> Tensor:
+            self.model.eval()
+            val_loader_ = tqdm_(val_loader)
+            for batch_num, (image_gt) in enumerate(val_loader_):
+                image, gt = zip(*image_gt)
+                image = image[0].to(self.device)
+                gt = gt[0].to(self.device)
+
+                if self.use_sobel:
+                    image = self.sobel(image)
+
+                pred = self.model.torchnet(image)[0]
+                linear_meters["val_acc"].add(pred.max(1)[1], gt)
+                report_dict = {"val_acc": linear_meters["val_acc"].summary()["acc"]}
+                val_loader_.set_postfix(report_dict)
+            print(f"Validating epoch {epoch}: {nice_dict(report_dict)} ")
+            return linear_meters["val_acc"].summary()["acc"]
+
+            # building training and validation set based on extracted features
+
+        train_loader = dcp(self.val_loader)
+        train_loader.dataset.datasets = (train_loader.dataset.datasets[0].datasets[0],)
+        val_loader = dcp(self.val_loader)
+        val_loader.dataset.datasets = (val_loader.dataset.datasets[0].datasets[1],)
+
+        # network and optimization
+        if not use_pretrain:
+            self.model.torchnet.apply(weights_init)
+            # wipe out the initialization
+        self.model.optimizer = torch.optim.Adam(self.model.torchnet.parameters(), lr=1e-4)
+        self.model.scheduler = torch.optim.lr_scheduler.StepLR(self.model.optimizer, step_size=50, gamma=0.1)
+
+        # meters
+        meter_config = {
+            "train_loss": AverageValueMeter(),
+            "train_acc": ConfusionMatrix(self.model.arch_dict["output_k_B"]),
+            "val_acc": ConfusionMatrix(self.model.arch_dict["output_k_B"])
+        }
+        linear_meters = MeterInterface(meter_config)
+        drawer = DrawCSV2(save_dir=self.save_dir, save_name=f"supervised_from_checkpoint_{use_pretrain}.png",
+                          columns_to_draw=["train_loss_mean",
+                                           "train_acc_acc",
+                                           "val_acc_acc"])
+        for epoch in range(self.max_epoch):
+            _sup_train_loop(train_loader, epoch)
+            with torch.no_grad():
+                _ = _sup_eval_loop(val_loader, epoch)
+            linear_meters.step()
+            linear_meters.summary().to_csv(self.save_dir / f"supervised_from_checkpoint_{use_pretrain}.csv")
             drawer.draw(linear_meters.summary())
