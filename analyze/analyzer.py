@@ -49,8 +49,9 @@ class AnalyzeInference(ClusteringGeneralTrainer):
         """
         using IIC method to show the evaluation, only for MNIST dataset
         """
-        assert self.val_loader.dataset_name == "mnist", \
-            "`save tsne plot` is only implemented for MNIST dataset, given {self.val_loader.dataset_name}."
+
+        # assert self.val_loader.dataset_name == "mnist", \
+        #     "`save 10-point projection` is only implemented for MNIST dataset, given {self.val_loader.dataset_name}."
 
         def get_coord(probs, num_classes):
             # computes coordinate for 1 sample based on probability distribution over c
@@ -115,8 +116,7 @@ class AnalyzeInference(ClusteringGeneralTrainer):
                 pt_start = coord - half_border
                 pt_end = coord + half_border
                 image[pt_start[0]:pt_end[0], pt_start[1]:pt_end[1], :] = average_images[GT_TO_ORDER[i]].unsqueeze(
-                    2).repeat(
-                    [1, 1, 3]) * 255.0
+                    2).repeat([1, 1, 3]) * 255.0
 
             # save to out_dir ---------------------------
             img = Image.fromarray(image)
@@ -124,8 +124,11 @@ class AnalyzeInference(ClusteringGeneralTrainer):
 
     @staticmethod
     def plot_cluster_average_images(val_loader, soft_pred):
-        assert val_loader.dataset_name == "mnist", \
-            f"save tsne plot is only implemented for MNIST dataset, given {val_loader.dataset_name}."
+        # assert val_loader.dataset_name == "mnist", \
+        #     f"save tsne plot is only implemented for MNIST dataset, given {val_loader.dataset_name}."
+        from deepclustering.augment.tensor_augment import Resize
+        import warnings
+        resize_call = Resize((24, 24), interpolation='bilinear')
 
         average_images = [torch.zeros(24, 24) for _ in range(10)]
 
@@ -135,6 +138,9 @@ class AnalyzeInference(ClusteringGeneralTrainer):
             # only take the tf3 image and gts, put them to self.device
             images, gt = images[0], gt[0]
             for i, img in enumerate(images):
+                with warnings.catch_warnings():
+                    warnings.simplefilter("ignore")
+                    img = resize_call(img.unsqueeze(0))
                 average_images[soft_pred[counter + i].argmax()] += img.squeeze() * soft_pred[counter + i].max()
 
             counter += len(images)
@@ -145,18 +151,17 @@ class AnalyzeInference(ClusteringGeneralTrainer):
     # 10 point projection ends
 
     # for tsne projection
-    def draw_tsne(self, val_loader, num_samples=1000):
+    def draw_tsne(self, num_samples=1000):
         self.model.eval()
-        assert val_loader.dataset_name == "mnist", \
-            f"save tsne plot is only implemented for MNIST dataset, given {self.val_loader.dataset_name}."
-        from deepclustering.arch.classification.IIC.net6c_two_head import ClusterNet6cTwoHead
-        assert isinstance(self.model.torchnet,
-                          ClusterNet6cTwoHead), f"self.model must be ClusterNet6cTwoHead, given {self.model}"
+        # assert val_loader.dataset_name == "mnist", \
+        #     f"save tsne plot is only implemented for MNIST dataset, given {self.val_loader.dataset_name}."
+        # from deepclustering.arch.classification.IIC.net6c_two_head import ClusterNet6cTwoHead
+        # assert isinstance(self.model.torchnet,
+        #                   ClusterNet6cTwoHead), f"self.model must be ClusterNet6cTwoHead, given {self.model}"
 
         images, features, targets = self.feature_exactor(conv_name="trunk", val_loader=self.val_loader)
         idx = torch.randperm(targets.size(0))[:num_samples]
-        self.writer.add_embedding(mat=features[idx], metadata=targets[idx], label_img=images[idx],
-                                  global_step=10000)
+        self.writer.add_embedding(mat=features[idx], metadata=targets[idx], global_step=10000)
 
     # feature extraction
     def feature_exactor(self, conv_name: str = "trunk", val_loader: DataLoader = None) -> Tuple[Tensor, Tensor, Tensor]:
@@ -364,7 +369,8 @@ class AnalyzeInference(ClusteringGeneralTrainer):
             "val_acc": ConfusionMatrix(self.model.arch_dict["output_k_B"])
         }
         linear_meters = MeterInterface(meter_config)
-        drawer = DrawCSV2(save_dir=self.save_dir, save_name=f"supervised_from_checkpoint_{use_pretrain}_data_aug_{data_aug}.png",
+        drawer = DrawCSV2(save_dir=self.save_dir,
+                          save_name=f"supervised_from_checkpoint_{use_pretrain}_data_aug_{data_aug}.png",
                           columns_to_draw=["train_loss_mean",
                                            "train_acc_acc",
                                            "val_acc_acc"])
