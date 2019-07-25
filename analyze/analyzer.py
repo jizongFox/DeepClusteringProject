@@ -335,7 +335,7 @@ class AnalyzeInference(ClusteringGeneralTrainer):
             self.model.torchnet.head_B.apply(weights_init)
             # wipe out the initialization
         self.model.optimizer = torch.optim.Adam(self.model.torchnet.parameters(), lr=lr)
-        self.model.scheduler = torch.optim.lr_scheduler.StepLR(self.model.optimizer, step_size=50, gamma=0.1)
+        self.model.scheduler = torch.optim.lr_scheduler.StepLR(self.model.optimizer, step_size=15, gamma=0.25)
 
         # meters
         meter_config = {
@@ -352,6 +352,7 @@ class AnalyzeInference(ClusteringGeneralTrainer):
             _sup_train_loop(train_loader, epoch)
             with torch.no_grad():
                 _ = _sup_eval_loop(val_loader, epoch)
+            self.model.step()
             linear_meters.step()
             linear_meters.summary().to_csv(self.save_dir / f"supervised_from_checkpoint_{use_pretrain}.csv")
             drawer.draw(linear_meters.summary())

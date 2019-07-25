@@ -38,7 +38,7 @@ if __name__ == '__main__':
     # correct save_dir and checkpoint_dir
     merged_config["Trainer"]["save_dir"] = checkpoint_path
     merged_config["Trainer"]["checkpoint_path"] = checkpoint_path
-    merged_config["Trainer"]["max_epoch"] = 300
+    merged_config["Trainer"]["max_epoch"] = 100
 
     # for reproducibility
     fix_all_seed(merged_config.get("Seed", 0))
@@ -92,5 +92,5 @@ if __name__ == '__main__':
     else:
         raise NotImplementedError("Only support mnist, cifar, and svhn.")
     """
-    clusteringTrainer.supervised_training(use_pretrain=True, lr=2e-4)
-    clusteringTrainer.supervised_training(use_pretrain=False, lr=2e-3)
+    clusteringTrainer.supervised_training(use_pretrain=True, lr=1e-4)
+    clusteringTrainer.supervised_training(use_pretrain=False, lr=1e-3)
