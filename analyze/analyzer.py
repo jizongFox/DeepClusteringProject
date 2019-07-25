@@ -2,6 +2,7 @@ from colorsys import hsv_to_rgb
 from copy import deepcopy as dcp
 from typing import Tuple, Dict
 
+import PIL
 import numpy as np
 import torch
 from PIL import Image
@@ -278,11 +279,15 @@ class AnalyzeInference(ClusteringGeneralTrainer):
     def supervised_training(self, use_pretrain=True, lr=1e-3, data_aug=False):
         from torchvision import transforms
         transform_train = transforms.Compose([
+            pil_augment.CenterCrop(size=(20, 20)),
+            pil_augment.Resize(size=(32, 32), interpolation=PIL.Image.NEAREST),
             transforms.RandomCrop(32, padding=4),
             transforms.RandomHorizontalFlip(),
             pil_augment.Img2Tensor()
         ])
         transform_val = transforms.Compose([
+            pil_augment.CenterCrop(size=(20, 20)),
+            pil_augment.Resize(size=(32, 32), interpolation=PIL.Image.NEAREST),
             pil_augment.Img2Tensor()
         ])
 
@@ -350,7 +355,7 @@ class AnalyzeInference(ClusteringGeneralTrainer):
             self.model.torchnet.head_B.apply(weights_init)
             # wipe out the initialization
         self.model.optimizer = torch.optim.Adam(self.model.torchnet.parameters(), lr=lr)
-        self.model.scheduler = torch.optim.lr_scheduler.StepLR(self.model.optimizer, step_size=15, gamma=0.25)
+        self.model.scheduler = torch.optim.lr_scheduler.StepLR(self.model.optimizer, step_size=50, gamma=0.2)
 
         # meters
         meter_config = {
@@ -359,7 +364,7 @@ class AnalyzeInference(ClusteringGeneralTrainer):
             "val_acc": ConfusionMatrix(self.model.arch_dict["output_k_B"])
         }
         linear_meters = MeterInterface(meter_config)
-        drawer = DrawCSV2(save_dir=self.save_dir, save_name=f"supervised_from_checkpoint_{use_pretrain}.png",
+        drawer = DrawCSV2(save_dir=self.save_dir, save_name=f"supervised_from_checkpoint_{use_pretrain}_data_aug_{data_aug}.png",
                           columns_to_draw=["train_loss_mean",
                                            "train_acc_acc",
                                            "val_acc_acc"])

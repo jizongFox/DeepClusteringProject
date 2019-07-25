@@ -38,7 +38,7 @@ if __name__ == '__main__':
     # correct save_dir and checkpoint_dir
     merged_config["Trainer"]["save_dir"] = checkpoint_path
     merged_config["Trainer"]["checkpoint_path"] = checkpoint_path
-    merged_config["Trainer"]["max_epoch"] = 100
+    merged_config["Trainer"]["max_epoch"] = 300
 
     # for reproducibility
     fix_all_seed(merged_config.get("Seed", 0))
@@ -94,3 +94,5 @@ if __name__ == '__main__':
     """
     clusteringTrainer.supervised_training(use_pretrain=True, lr=1e-4, data_aug=True)
     clusteringTrainer.supervised_training(use_pretrain=False, lr=1e-3, data_aug=True)
+    clusteringTrainer.supervised_training(use_pretrain=True, lr=1e-4, data_aug=False)
+    clusteringTrainer.supervised_training(use_pretrain=False, lr=1e-3, data_aug=False)
