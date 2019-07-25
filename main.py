@@ -25,6 +25,9 @@ trainer_mapping: Dict[str, Type[trainer.ClusteringGeneralTrainer]] = {
     "iicgeomixupreg": trainer.IICMixup_RegTrainer,  # iicgeo with mixup as a regularization
     "iicgeovatmixupreg": trainer.IICVATMixup_RegTrainer,  # iicgeo with VAT and mixup as a regularization
     "iicgeovatvatreg": trainer.IICVATVAT_RegTrainer,  # iicgeo with VAT and VAT as regularization
+    "iicvatmivatklreg": trainer.IICVATMI_VATKL,  # special case of IIC with regularization,
+    # using VAT_mi for IIC and VAT_kl for Regularization
+
     # using different regularization for imsat
     "imsat": trainer.IMSATAbstractTrainer,  # imsat without any regularization
     "imsatvat": trainer.IMSATVATTrainer,  # imsat with vat

@@ -1,7 +1,7 @@
 __all__ = ["IICMixup_RegTrainer", "IICGeoTrainer", "IICVATMixup_RegTrainer", "IICVAT_RegTrainer",
-           "IICVATVAT_RegTrainer"]
+           "IICVATVAT_RegTrainer", "IICVATMI_VATKL"]
 from typing import Union, Dict, List
-
+from copy import deepcopy as dcp
 from deepclustering.meters import AverageValueMeter
 from deepclustering.model import Model
 from torch import Tensor
@@ -193,3 +193,28 @@ class IICVATMixup_RegTrainer(IICMixup_RegTrainer, VATReg):
         vat_loss, *_ = self._vat_regularization(self.model.torchnet, tf1_images, head=head_name)
         self.METERINTERFACE["train_adv"].add(vat_loss.item())
         return geo_mixup_loss + vat_loss
+
+
+# special case IICVAT_MI + VAT
+class IICVATMI_VATKL(IICVAT_RegTrainer):
+
+    def __init__(self, model: Model, train_loader_A: DataLoader, train_loader_B: DataLoader, val_loader: DataLoader,
+                 max_epoch: int = 100, save_dir: str = "IICTrainer", checkpoint_path: str = None, device="cpu",
+                 head_control_params: Dict[str, int] = {"B": 1}, use_sobel: bool = False, config: dict = None,
+                 VAT_params: Dict[str, Union[int, float, str]] = {"name": "kl"}, reg_weight: float = 0.05,
+                 **kwargs) -> None:
+        super().__init__(model, train_loader_A, train_loader_B, val_loader, max_epoch, save_dir, checkpoint_path,
+                         device, head_control_params, use_sobel, config, VAT_params, reg_weight, **kwargs)
+        from RegHelper import VATModuleInterface
+        _VAT_params = dcp(VAT_params)
+        _VAT_params["name"] = "mi"
+        self.mi_vat_module = VATModuleInterface(_VAT_params)
+
+    def _trainer_specific_loss(
+            self, tf1_images: Tensor, tf2_images: Tensor, head_name: str
+    ):
+        # replace tf2_image from geo-transformed to adversarial images based on MI, then calling super() would be fine.
+        _, tf2_images, _ = self.mi_vat_module(self.model.torchnet, tf1_images, head=head_name)
+        assert tf1_images.shape == tf2_images.shape
+        loss = super()._trainer_specific_loss(tf1_images, tf2_images, head_name)
+        return loss

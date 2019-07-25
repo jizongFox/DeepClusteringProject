@@ -14,8 +14,8 @@ account=def-mpederso  #rrg-mpederso, def-mpederso, and def-chdesa
 time=12
 DATASET=MNIST
 transforms=strong
-main_dir="07_15_benchmark/${transforms}"
-max_epoch=2
+main_dir="07_25_benchmark/${transforms}"
+max_epoch=2000
 seed=1
 
 
@@ -38,6 +38,7 @@ declare -a StringArray=(
 "python -O main.py Config=config/config_${DATASET}.yaml Trainer.name=iicgeovatmixupreg Trainer.save_dir=${main_dir}/${DATASET}_${seed}/iicgeovatmixupreg_mi Trainer.max_epoch=${max_epoch} Seed=${seed} Trainer.VAT_params.name=mi DataLoader.transforms=${transforms} #Trainer.checkpoint_path=runs/${main_dir}/${DATASET}_${seed}/iicgeovatmixupreg_mi " \
 "python -O main.py Config=config/config_${DATASET}.yaml Trainer.name=iicgeovatvatreg Trainer.save_dir=${main_dir}/${DATASET}_${seed}/iicgeovatvatreg_kl Trainer.max_epoch=${max_epoch} Seed=${seed} Trainer.VAT_params.name=kl DataLoader.transforms=${transforms} #Trainer.checkpoint_path=runs/${main_dir}/${DATASET}_${seed}/iicgeovatvatreg_kl " \
 
+"python -O main.py Config=config/config_${DATASET}.yaml Trainer.name=iicvatmivatklreg Trainer.save_dir=${main_dir}/${DATASET}_${seed}/iicvat_mi_vat_kl_reg Trainer.max_epoch=${max_epoch} Seed=${seed} Trainer.VAT_params.name=kl DataLoader.transforms=${transforms} #Trainer.checkpoint_path=runs${main_dir}/${DATASET}_${seed}/iicvat_mi_vat_kl_reg " \
 
 "python -O main.py Config=config/config_${DATASET}.yaml Trainer.name=imsat Trainer.save_dir=${main_dir}/${DATASET}_${seed}/imsat Trainer.max_epoch=${max_epoch} Seed=${seed} DataLoader.transforms=${transforms} #Trainer.checkpoint_path=runs/${main_dir}/${DATASET}_${seed}/imsat" \
 "python -O main.py Config=config/config_${DATASET}.yaml Trainer.name=imsatvat Trainer.save_dir=${main_dir}/${DATASET}_${seed}/imsatvat Trainer.max_epoch=${max_epoch} Seed=${seed} DataLoader.transforms=${transforms} #Trainer.checkpoint_path=runs/${main_dir}/${DATASET}_${seed}/imsatvat" \
