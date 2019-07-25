@@ -274,7 +274,7 @@ class AnalyzeInference(ClusteringGeneralTrainer):
             linear_meters.summary().to_csv(self.save_dir / f"retraining_from_{conv_name}.csv")
             drawer.draw(linear_meters.summary())
 
-    def supervised_training(self, use_pretrain=True):
+    def supervised_training(self, use_pretrain=True, lr=1e-3):
         self.kl = KL_div(reduce=True)
 
         def _sup_train_loop(train_loader, epoch):
@@ -334,7 +334,7 @@ class AnalyzeInference(ClusteringGeneralTrainer):
         else:
             self.model.torchnet.head_B.apply(weights_init)
             # wipe out the initialization
-        self.model.optimizer = torch.optim.Adam(self.model.torchnet.parameters(), lr=1e-4)
+        self.model.optimizer = torch.optim.Adam(self.model.torchnet.parameters(), lr=lr)
         self.model.scheduler = torch.optim.lr_scheduler.StepLR(self.model.optimizer, step_size=50, gamma=0.1)
 
         # meters
