@@ -64,7 +64,7 @@ if __name__ == '__main__':
         config=merged_config,
         **merged_config["Trainer"]
     )
-
+    """ for feature extraction and retrainning
     if "mnist" in DEFAULT_CONFIG.lower() or "svhn" in DEFAULT_CONFIG.lower():
         # for mnist (VGG styple network): `trunk`, `trunk.features[N]`, etc.
         clusteringTrainer.linear_retraining("head_B.heads[0]", lr=1e-4)
@@ -91,3 +91,6 @@ if __name__ == '__main__':
         clusteringTrainer.linear_retraining("trunk.layer2", lr=1e-4)
     else:
         raise NotImplementedError("Only support mnist, cifar, and svhn.")
+    """
+    clusteringTrainer.supervised_training(use_pretrain=True)
+    clusteringTrainer.supervised_training(use_pretrain=False)
