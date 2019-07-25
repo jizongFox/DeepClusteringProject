@@ -6,13 +6,14 @@ import numpy as np
 import torch
 from PIL import Image
 from deepclustering import ModelMode
+from deepclustering.arch import weights_init
+from deepclustering.augment import pil_augment
 from deepclustering.loss import KL_div
 from deepclustering.meters import MeterInterface, ConfusionMatrix, AverageValueMeter
 from deepclustering.model import Model
 from deepclustering.utils import tqdm_, nice_dict, class2one_hot
 from deepclustering.utils.classification.assignment_mapping import hungarian_match, flat_acc
 from deepclustering.writer import DrawCSV2
-from deepclustering.arch import weights_init
 from torch import Tensor, nn
 from torch.utils.data import DataLoader, TensorDataset
 
@@ -274,7 +275,17 @@ class AnalyzeInference(ClusteringGeneralTrainer):
             linear_meters.summary().to_csv(self.save_dir / f"retraining_from_{conv_name}.csv")
             drawer.draw(linear_meters.summary())
 
-    def supervised_training(self, use_pretrain=True, lr=1e-3):
+    def supervised_training(self, use_pretrain=True, lr=1e-3, data_aug=False):
+        from torchvision import transforms
+        transform_train = transforms.Compose([
+            transforms.RandomCrop(32, padding=4),
+            transforms.RandomHorizontalFlip(),
+            pil_augment.Img2Tensor()
+        ])
+        transform_val = transforms.Compose([
+            pil_augment.Img2Tensor()
+        ])
+
         self.kl = KL_div(reduce=True)
 
         def _sup_train_loop(train_loader, epoch):
@@ -328,6 +339,10 @@ class AnalyzeInference(ClusteringGeneralTrainer):
         val_loader = dcp(self.val_loader)
         val_loader.dataset.datasets = (val_loader.dataset.datasets[0].datasets[1],)
 
+        if data_aug:
+            train_loader.dataset.datasets[0].transform = transform_train
+            val_loader.dataset.datasets[0].transform = transform_val
+
         # network and optimization
         if not use_pretrain:
             self.model.torchnet.apply(weights_init)
@@ -354,5 +369,6 @@ class AnalyzeInference(ClusteringGeneralTrainer):
                 _ = _sup_eval_loop(val_loader, epoch)
             self.model.step()
             linear_meters.step()
-            linear_meters.summary().to_csv(self.save_dir / f"supervised_from_checkpoint_{use_pretrain}.csv")
+            linear_meters.summary().to_csv(
+                self.save_dir / f"supervised_from_checkpoint_{use_pretrain}_data_aug_{data_aug}.csv")
             drawer.draw(linear_meters.summary())
