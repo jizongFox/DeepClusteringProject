@@ -162,12 +162,6 @@ class AnalyzeInference(ClusteringGeneralTrainer):
     # for tsne projection
     def draw_tsne(self, num_samples=1000):
         self.model.eval()
-        # assert val_loader.dataset_name == "mnist", \
-        #     f"save tsne plot is only implemented for MNIST dataset, given {self.val_loader.dataset_name}."
-        # from deepclustering.arch.classification.IIC.net6c_two_head import ClusterNet6cTwoHead
-        # assert isinstance(self.model.torchnet,
-        #                   ClusterNet6cTwoHead), f"self.model must be ClusterNet6cTwoHead, given {self.model}"
-
         images, features, targets = self.feature_exactor(conv_name="trunk", val_loader=self.val_loader)
         idx = torch.randperm(targets.size(0))[:num_samples]
         self.writer.add_embedding(mat=features[idx], metadata=targets[idx], global_step=10000)
@@ -401,6 +395,7 @@ class AnalyzeInference(ClusteringGeneralTrainer):
     def draw_IMSAT_table(self, num_samples=20):
         # no shuffle
         from .utils import Image_Pool
+        from torchvision.utils import make_grid
 
         assert isinstance(self.val_loader.sampler, torch.utils.data.SequentialSampler)
 
@@ -409,15 +404,27 @@ class AnalyzeInference(ClusteringGeneralTrainer):
                                                                mode=ModelMode.EVAL,
                                                                return_soft_predict=True)
         images = []
-        for image_gt in self.val_loader:
+        # make cifar10 image to be colorful.
+        val_loader = dcp(self.val_loader)
+        if val_loader.dataset_name in ("cifar", "svhn"):
+            val_loader.dataset.datasets[0].datasets[0].transform.transforms[2] = pil_augment.Img2Tensor(
+                include_rgb=True, include_grey=False)
+            val_loader.dataset.datasets[0].datasets[1].transform.transforms[2] = pil_augment.Img2Tensor(
+                include_rgb=True, include_grey=False)
+
+        for image_gt in val_loader:
             img, gt, *_ = list(zip(*image_gt))
             img, gt = img[0], gt[0]
             images.append(img)
 
         images = torch.cat(images, 0)
         image_pool = Image_Pool(num_samples, 10)
-        image_pool.add(images, target)
+        image_pool.add(images, torch.Tensor(soft_preds.argmax(dim=1).float()))
         image_dict = image_pool.image_pool()
-        from torchvision.utils import make_grid
-
-        print()
+        first_image_size = make_grid(image_dict[0], nrow=num_samples).shape
+        whole_image = torch.ones(first_image_size[0], first_image_size[1] * 10, first_image_size[2])
+        for i in range(10):
+            whole_image[:, first_image_size[1] * i:first_image_size[1] * (i + 1), :] = make_grid(image_dict[i],
+                                                                                                 nrow=num_samples)
+        imsat_images = Image.fromarray((whole_image.numpy().transpose(1, 2, 0) * 255.0).astype(np.uint8))
+        imsat_images.save(f"{self.save_dir}/imsat_image.png")

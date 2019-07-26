@@ -99,10 +99,10 @@ if __name__ == '__main__':
     # clusteringTrainer.supervised_training(use_pretrain=False, lr=1e-3, data_aug=False)
     # """
 
-    for t in (100, 20, 10, 1):
-        clusteringTrainer.save_plot(temporature=t)
+    # for t in (100, 20, 10, 1):
+    #     clusteringTrainer.save_plot(temporature=t)
 
     # clusteringTrainer.draw_tsne(500)
     # clusteringTrainer.writer.close()
 
-    # clusteringTrainer.draw_IMSAT_table()
+    clusteringTrainer.draw_IMSAT_table(num_samples=30)
