@@ -93,10 +93,16 @@ if __name__ == '__main__':
         raise NotImplementedError("Only support mnist, cifar, and svhn.")
     """
     # supervised training part.
-    clusteringTrainer.supervised_training(use_pretrain=True, lr=1e-4, data_aug=True)
-    clusteringTrainer.supervised_training(use_pretrain=False, lr=1e-3, data_aug=True)
-    clusteringTrainer.supervised_training(use_pretrain=True, lr=1e-4, data_aug=False)
-    clusteringTrainer.supervised_training(use_pretrain=False, lr=1e-3, data_aug=False)
+    # clusteringTrainer.supervised_training(use_pretrain=True, lr=1e-4, data_aug=True)
+    # clusteringTrainer.supervised_training(use_pretrain=False, lr=1e-3, data_aug=True)
+    # clusteringTrainer.supervised_training(use_pretrain=True, lr=1e-4, data_aug=False)
+    # clusteringTrainer.supervised_training(use_pretrain=False, lr=1e-3, data_aug=False)
     # """
-    # clusteringTrainer.save_plot()
-    # clusteringTrainer.draw_tsne(5000)
+
+    for t in (100, 20, 10, 1):
+        clusteringTrainer.save_plot(temporature=t)
+
+    # clusteringTrainer.draw_tsne(500)
+    # clusteringTrainer.writer.close()
+
+    # clusteringTrainer.draw_IMSAT_table()

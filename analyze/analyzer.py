@@ -46,13 +46,19 @@ class AnalyzeInference(ClusteringGeneralTrainer):
         assert self.checkpoint, "checkpoint must be provided in `AnalyzeInference`."
 
     # for 10 point projection
-    def save_plot(self) -> None:
+    def save_plot(self, temporature=1) -> None:
         """
-        using IIC method to show the evaluation, only for MNIST dataset
+        using IIC method to show the evaluation, only for MNIST dataset, code taken largely from the original repo.
         """
+        from .utils import Temporature
 
-        # assert self.val_loader.dataset_name == "mnist", \
-        #     "`save 10-point projection` is only implemented for MNIST dataset, given {self.val_loader.dataset_name}."
+        headBheads = dcp(self.model.torchnet.head_B.heads)
+
+        new_headBheads = nn.ModuleList()
+        for head in headBheads:
+            new_headBheads.append(nn.Sequential(*[Temporature(temporature), *head]))
+
+        self.model.torchnet.head_B.heads = new_headBheads
 
         def get_coord(probs, num_classes):
             # computes coordinate for 1 sample based on probability distribution over c
@@ -121,7 +127,9 @@ class AnalyzeInference(ClusteringGeneralTrainer):
 
             # save to out_dir ---------------------------
             img = Image.fromarray(image)
-            img.save(self.save_dir / f"best_tsne_{colour_i}.png")
+            img.save(self.save_dir / f"best_tsne_{colour_i}_temporature_{temporature}.png")
+
+        self.model.torchnet.head_B.heads = headBheads
 
     @staticmethod
     def plot_cluster_average_images(val_loader, soft_pred):
@@ -137,12 +145,12 @@ class AnalyzeInference(ClusteringGeneralTrainer):
         for image_labels in tqdm_(val_loader):
             images, gt, *_ = list(zip(*image_labels))
             # only take the tf3 image and gts, put them to self.device
-            images, gt = images[0], gt[0]
+            images, gt = images[0].cuda(), gt[0].cuda()
             for i, img in enumerate(images):
                 with warnings.catch_warnings():
                     warnings.simplefilter("ignore")
                     img = resize_call(img.unsqueeze(0))
-                average_images[soft_pred[counter + i].argmax()] += img.squeeze() * soft_pred[counter + i].max()
+                average_images[soft_pred[counter + i].argmax()] += img.squeeze().cpu() * soft_pred[counter + i].max()
 
             counter += len(images)
         assert counter == val_loader.dataset.__len__()
@@ -284,7 +292,8 @@ class AnalyzeInference(ClusteringGeneralTrainer):
 
     def supervised_training(self, use_pretrain=True, lr=1e-3, data_aug=False):
         # load the best checkpoint
-        self.load_checkpoint(torch.load(str(Path(self.checkpoint)/self.checkpoint_identifier),map_location=torch.device("cpu")))
+        self.load_checkpoint(
+            torch.load(str(Path(self.checkpoint) / self.checkpoint_identifier), map_location=torch.device("cpu")))
         self.model.to(self.device)
 
         from torchvision import transforms
@@ -388,3 +397,27 @@ class AnalyzeInference(ClusteringGeneralTrainer):
             linear_meters.summary().to_csv(
                 self.save_dir / f"supervised_from_checkpoint_{use_pretrain}_data_aug_{data_aug}.csv")
             drawer.draw(linear_meters.summary())
+
+    def draw_IMSAT_table(self, num_samples=20):
+        # no shuffle
+        from .utils import Image_Pool
+
+        assert isinstance(self.val_loader.sampler, torch.utils.data.SequentialSampler)
+
+        with torch.no_grad():
+            best_score, (target, soft_preds) = self._eval_loop(val_loader=self.val_loader, epoch=100000,
+                                                               mode=ModelMode.EVAL,
+                                                               return_soft_predict=True)
+        images = []
+        for image_gt in self.val_loader:
+            img, gt, *_ = list(zip(*image_gt))
+            img, gt = img[0], gt[0]
+            images.append(img)
+
+        images = torch.cat(images, 0)
+        image_pool = Image_Pool(num_samples, 10)
+        image_pool.add(images, target)
+        image_dict = image_pool.image_pool()
+        from torchvision.utils import make_grid
+
+        print()
