@@ -6,10 +6,6 @@ from torch.utils.data import Dataset, DataLoader
 
 from . import dataset
 
-__doc__ = (
-    "This interface is to define clustering datasets with different transformations"
-)
-
 
 class ClusterDatasetInterface(object):
     """
