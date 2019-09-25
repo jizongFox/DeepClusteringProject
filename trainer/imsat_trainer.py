@@ -3,9 +3,9 @@ __all__ = ["IMSATAbstractTrainer", "IMSATVATGeoMixupTrainer", "IMSATVATGeoTraine
 from typing import List, Union, Dict
 
 import torch
+from deepclustering.loss.IID_losses import IIDLoss
 from deepclustering.loss.IMSAT_loss import MultualInformaton_IMSAT
 from deepclustering.loss.loss import KL_div
-from deepclustering.loss.IID_losses import IIDLoss
 from deepclustering.meters import AverageValueMeter
 from deepclustering.model import Model
 from deepclustering.utils import (
@@ -16,7 +16,7 @@ from deepclustering.utils import (
 from torch import Tensor
 from torch.utils.data import DataLoader
 
-from .clustering_trainer import ClusteringGeneralTrainer, MixupReg, VATReg, GeoReg
+from .clustering_trainer import ClusteringGeneralTrainer, MixupReg, VATReg, GeoReg, GaussianReg
 
 
 class IMSATAbstractTrainer(ClusteringGeneralTrainer):
@@ -71,8 +71,8 @@ class IMSATAbstractTrainer(ClusteringGeneralTrainer):
         self.METERINTERFACE.register_new_meter("train_mi", AverageValueMeter())
         self.METERINTERFACE.register_new_meter("train_entropy", AverageValueMeter())
         self.METERINTERFACE.register_new_meter("train_centropy", AverageValueMeter())
-        colum_to_draw = [
-                            "train_mi_mean",
+        colum_to_draw = [  # type: ignore
+                            "train_mi_mean",  # type: ignore
                             "train_entropy_mean",
                             "train_centropy_mean",
                         ] + colum_to_draw  # type: ignore
@@ -136,7 +136,8 @@ class IMSATAbstractTrainer(ClusteringGeneralTrainer):
         No Regularization is required.
         :return:
         """
-        return torch.Tensor([0]).to(self.device)
+        # return torch.Tensor([0]).to(self.device)
+        return torch.tensor(0, device=self.device, dtype=torch.float32)
 
 
 # three basic derives
@@ -270,6 +271,11 @@ class IMSATMixupTrainer(IMSATAbstractTrainer, MixupReg):
         _reg_losses: Tensor = sum(reg_losses) / len(reg_losses)
         self.METERINTERFACE["train_mixup"].add(_reg_losses.item())
         return _reg_losses
+
+
+# todo: add gaussian noise or cutout. if they are in the trainer or the transformer.
+class IMSATGaussianTrainer(IMSATAbstractTrainer, GaussianReg):
+    pass
 
 
 # VAT+GEO

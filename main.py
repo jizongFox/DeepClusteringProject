@@ -14,6 +14,7 @@ DATA_PATH.mkdir(exist_ok=True)
 
 trainer_mapping: Dict[str, Type[trainer.ClusteringGeneralTrainer]] = {
     # using different transforms for iic
+    # todo: add cutout or gaussian if it is necessary
     "iicgeo": trainer.IICGeoTrainer,  # the basic iic
     "iicmixup": trainer.IICMixupTrainer,  # the basic IIC with mixup as the data augmentation
     "iicvat": trainer.IICVATTrainer,  # the basic iic with VAT as the basic data augmentation
@@ -102,6 +103,7 @@ def get_dataloader(config: Dict[str, Union[float, int, dict, str]], DEFAULT_CONF
     transforms = config.get("DataLoader").get("transforms")
     assert transforms in ("naive", "strong"), f"Only predefined `naive` and `strong` transformations are supported."
     # like a switch statement in python.
+    # todo: to determinate if we should include cutout or gaussian as the transformation.
     img_transforms = {"naive": naive_transforms, "strong": strong_transforms}.get(transforms)
     assert img_transforms
     print("image transformations:")

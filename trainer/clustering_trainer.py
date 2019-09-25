@@ -26,10 +26,30 @@ from deepclustering.utils.classification.assignment_mapping import (
     flat_acc,
     hungarian_match,
 )
+from termcolor import colored
 from torch import nn, Tensor
 from torch.utils.data import DataLoader
 
 from RegHelper import pred_histgram, VATModuleInterface, MixUp
+
+
+class GuassianAdder:
+    """
+    This is the transformation class to add gaussian noise on PyTorch Tensor images.
+    """
+
+    def __init__(self, gaussian_std) -> None:
+        super().__init__()
+        assert isinstance(gaussian_std, float), type(gaussian_std)
+        self.gaussian_std = gaussian_std
+        print(colored(f"Gaussian Noise Adder with std={gaussian_std}", "green"))
+
+    def __call__(self, input_images: Tensor):
+        b, c, h, w = input_images.shape  # here the input images should have 4 dimensions
+        _noise = torch.randn_like(input_images, device=input_images.device,
+                                  dtype=input_images.dtype) * self.gaussian_std
+        return input_images + _noise
+
 
 
 class VATReg:
@@ -93,6 +113,35 @@ class MixupReg:
             tf1_image, tf1_pred, tf2_image, tf2_pred
         )
         return mixup_img, mixup_label, mixup_index
+
+
+class GaussianReg:
+
+    def __init__(self, gaussian_std: float = 0.1) -> None:
+        super().__init__()
+        self.gaussian_adder = GuassianAdder(gaussian_std)
+        self.kl_div = KL_div(reduce=True)
+
+    def _gaussian_regularization(self, model: Model, tf1_images, tf1_pred_simplex: List[Tensor]):
+        """
+        calculate predicton simplexes on gaussian noise tf1 images and the kl div of the original prediction simplex.
+        :param tf1_images: tf1-transformed images
+        :param tf1_pred_simplex: simplex list of tf1-transformed image prediction
+        :return:  loss
+        """
+        _tf1_images_gaussian = self.gaussian_adder(tf1_images)
+        _tf1_gaussian_simplex = model(_tf1_images_gaussian)
+        assert_list(simplex, tf1_pred_simplex)
+        assert_list(simplex, _tf1_gaussian_simplex)
+        assert tf1_pred_simplex.__len__() == _tf1_gaussian_simplex.__len__()
+        reg_loss = []
+        for __tf1_simplex, __tf1_gaussian_simplex in zip(tf1_pred_simplex, _tf1_gaussian_simplex):
+            reg_loss.append(self.kl_div(__tf1_gaussian_simplex, __tf1_simplex))
+        return sum(reg_loss) / len(reg_loss)
+
+
+class CutoutReg:
+    pass
 
 
 class ClusteringGeneralTrainer(_Trainer):

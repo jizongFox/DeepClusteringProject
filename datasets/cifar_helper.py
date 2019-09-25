@@ -164,6 +164,10 @@ strong_transform_dict = {
         "Img2Tensor": {"include_rgb": False, "include_grey": True},
     },
 }
+# ===========add gaussian noise or cutout transformation===========
+# todo: not clear adding cutout or adding gaussian noise are in the \
+# todo: transofrmation space or loss space. not easy to have the best tradeoff
+
 # =================public interface for transforms=================
 cifar10_naive_transform = {}
 
