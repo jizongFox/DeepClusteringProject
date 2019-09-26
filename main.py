@@ -14,10 +14,12 @@ DATA_PATH.mkdir(exist_ok=True)
 
 trainer_mapping: Dict[str, Type[trainer.ClusteringGeneralTrainer]] = {
     # using different transforms for iic
-    # todo: add cutout or gaussian if it is necessary
+    # ToDo: add cutout or gaussian if it is necessary
     "iicgeo": trainer.IICGeoTrainer,  # the basic iic
     "iicmixup": trainer.IICMixupTrainer,  # the basic IIC with mixup as the data augmentation
     "iicvat": trainer.IICVATTrainer,  # the basic iic with VAT as the basic data augmentation
+    "iicgaussian": trainer.IICGaussianTrainer,  # the basic iic with gaussian data augmentation
+    "iiccutout": trainer.IICCutoutTrainer,  # the basic iic with cutout as data augmentation
     "iicgeovat": trainer.IICGeoVATTrainer,  # IIC with geo and vat as the data augmentation
     "iicgeomixup": trainer.IICGeoMixupTrainer,  # IIC with geo and mixup as the data augmentation
     "iicgeovatmixup": trainer.IICGeoVATMixupTrainer,  # IIC with geo, vat and mixup as the data augmentation
@@ -32,11 +34,13 @@ trainer_mapping: Dict[str, Type[trainer.ClusteringGeneralTrainer]] = {
     # using different regularization for imsat
     "imsat": trainer.IMSATAbstractTrainer,  # imsat without any regularization
     "imsatvat": trainer.IMSATVATTrainer,  # imsat with vat
-    "imsatgeo": trainer.IMSATGeoTrainer,
+    "imsatgeo": trainer.IMSATGeoTrainer,  # imsat with geo transformation
     "imsatmixup": trainer.IMSATMixupTrainer,  # imsat with mixup
+    "imsatgaussian": trainer.IMSATGaussianTrainer,  # imsat with gaussian noise
+    "imsatcutout": trainer.IMSATCutoutTrainer,  # imsat with cutout transform
     "imsatvatmixup": trainer.IMSATVATMixupTrainer,  # imsat with vat + mixup
     "imsatvatgeo": trainer.IMSATVATGeoTrainer,  # imsat with geo+vat
-    "imsatgeomixup": trainer.IMSATGeoMixup,
+    "imsatgeomixup": trainer.IMSATGeoMixup,  # imsat with geo and mixup
     "imsatvatgeomixup": trainer.IMSATVATGeoMixupTrainer,  # imsat with geo vat and mixup
     "imsatvatiicgeo": trainer.IMSATVATIICGeo  # using IMSATVAT with IIC regularization
 }

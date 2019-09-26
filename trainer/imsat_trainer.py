@@ -1,5 +1,6 @@
 __all__ = ["IMSATAbstractTrainer", "IMSATVATGeoMixupTrainer", "IMSATVATGeoTrainer", "IMSATVATTrainer",
-           "IMSATMixupTrainer", "IMSATVATMixupTrainer", "IMSATGeoTrainer", "IMSATGeoMixup", "IMSATVATIICGeo"]
+           "IMSATMixupTrainer", "IMSATGaussianTrainer", "IMSATCutoutTrainer", "IMSATVATMixupTrainer", "IMSATGeoTrainer",
+           "IMSATGeoMixup", "IMSATVATIICGeo"]
 from typing import List, Union, Dict
 
 import torch
@@ -16,7 +17,7 @@ from deepclustering.utils import (
 from torch import Tensor
 from torch.utils.data import DataLoader
 
-from .clustering_trainer import ClusteringGeneralTrainer, MixupReg, VATReg, GeoReg, GaussianReg
+from .clustering_trainer import ClusteringGeneralTrainer, MixupReg, VATReg, GeoReg, GaussianReg, CutoutReg
 
 
 class IMSATAbstractTrainer(ClusteringGeneralTrainer):
@@ -117,9 +118,9 @@ class IMSATAbstractTrainer(ClusteringGeneralTrainer):
         batch_loss: Tensor = sum(batch_loss) / len(batch_loss)  # type: ignore
         entropies: Tensor = sum(entropies) / len(entropies)  # type: ignore
         centropies: Tensor = sum(centropies) / len(centropies)  # type: ignore
-        self.METERINTERFACE["train_mi"].add(batch_loss.item())
-        self.METERINTERFACE["train_entropy"].add(entropies.item())
-        self.METERINTERFACE["train_centropy"].add(centropies.item())
+        self.METERINTERFACE["train_mi"].add(batch_loss.item())  # type: ignore
+        self.METERINTERFACE["train_entropy"].add(entropies.item())  # type: ignore
+        self.METERINTERFACE["train_centropy"].add(centropies.item())  # type: ignore
         # add regularizations such as VAT, Mixup, GEO or more.
         reg_loss = self._regulaze(tf1_images, tf2_images, tf1_pred_simplex, head_name)
         # decrease the importance of MI, based on the IMSAT chainer implementation.
@@ -214,6 +215,7 @@ class IMSATVATTrainer(IMSATAbstractTrainer, VATReg):
         :param img_pred_simplex: prediction on basci transformed image
         :param head_name: head_name
         :return: regularization loss
+        No tf1_images are used for VAT
         """
         reg_loss, *_ = self._vat_regularization(self.model.torchnet, images, head=head_name)
         self.METERINTERFACE["train_adv"].add(reg_loss.item())
@@ -273,9 +275,69 @@ class IMSATMixupTrainer(IMSATAbstractTrainer, MixupReg):
         return _reg_losses
 
 
-# todo: add gaussian noise or cutout. if they are in the trainer or the transformer.
+# todo: check gaussian noise.
 class IMSATGaussianTrainer(IMSATAbstractTrainer, GaussianReg):
-    pass
+
+    def __init__(self, model: Model, train_loader_A: DataLoader, train_loader_B: DataLoader, val_loader: DataLoader,
+                 max_epoch: int = 100, save_dir: str = "IMSATAbstractTrainer", checkpoint_path: str = None,
+                 device="cpu", head_control_params: Dict[str, int] = {"B": 1}, use_sobel: bool = False,
+                 config: dict = None, MI_params: dict = {}, Gaussian_params: dict = {"gaussian_std": 0.1},
+                 **kwargs) -> None:
+        IMSATAbstractTrainer.__init__(self, model, train_loader_A, train_loader_B, val_loader, max_epoch, save_dir,
+                                      checkpoint_path, device, head_control_params, use_sobel, config, MI_params,
+                                      **kwargs)
+        GaussianReg.__init__(self, **Gaussian_params)
+
+    def __init_meters__(self) -> List[Union[str, List[str]]]:
+        colums = super().__init_meters__()
+        self.METERINTERFACE.register_new_meter("train_gaussian", AverageValueMeter())
+        colums.insert(-1, "train_gaussian_mean")
+        return colums
+
+    @property
+    def _training_report_dict(self):
+        # add vat meter
+        report_dict = super()._training_report_dict
+        report_dict.update({"gaussian": self.METERINTERFACE["train_gaussian"].summary()["mean"]})
+        return dict_filter(report_dict)  # type: ignore
+
+    def _regulaze(self, images: Tensor, tf_images: Tensor, img_pred_simplex: List[Tensor],
+                  head_name: str = "B") -> Tensor:
+        _reg_loss = self._gaussian_regularization(self.model, images, img_pred_simplex)
+        self.METERINTERFACE["train_gaussian"].add(_reg_loss.item())
+        return _reg_loss
+
+
+# todo: check cutout trainer
+class IMSATCutoutTrainer(IMSATAbstractTrainer, CutoutReg):
+
+    def __init__(self, model: Model, train_loader_A: DataLoader, train_loader_B: DataLoader, val_loader: DataLoader,
+                 max_epoch: int = 100, save_dir: str = "IMSATAbstractTrainer", checkpoint_path: str = None,
+                 device="cpu", head_control_params: Dict[str, int] = {"B": 1}, use_sobel: bool = False,
+                 config: dict = None, MI_params: dict = {}, Cutout_params: dict = {}, **kwargs) -> None:
+        IMSATAbstractTrainer.__init__(self, model, train_loader_A, train_loader_B, val_loader, max_epoch, save_dir,
+                                      checkpoint_path, device, head_control_params, use_sobel, config, MI_params,
+                                      **kwargs)
+        CutoutReg.__init__(self, **Cutout_params)
+
+    def __init_meters__(self) -> List[Union[str, List[str]]]:
+        colums = super().__init_meters__()
+        self.METERINTERFACE.register_new_meter("train_cutout", AverageValueMeter())
+        colums.insert(-1, "train_cutout_mean")
+        return colums
+
+    def _regulaze(self, images: Tensor, tf_images: Tensor, img_pred_simplex: List[Tensor],
+                  head_name: str = "B") -> Tensor:
+        _reg_loss = self._cutout_regularization(self.model, images, img_pred_simplex)
+        self.METERINTERFACE["train_cutout"].add(_reg_loss.item())
+        return _reg_loss
+
+    @property
+    def _training_report_dict(self):
+        # add vat meter
+        report_dict = super()._training_report_dict
+        report_dict.update({"cutout": self.METERINTERFACE["train_cutout"].summary()["mean"]})
+        return dict_filter(report_dict)  # type: ignore
 
 
 # VAT+GEO
@@ -488,3 +550,5 @@ class IMSATVATIICGeo(IMSATVATTrainer):
         batch_loss: torch.Tensor = sum(batch_loss) / len(batch_loss)  # type:ignore
         self.METERINTERFACE[f"train_head_{head_name}"].add(-batch_loss.item())  # type: ignore
         return batch_loss + vat_loss
+
+# todo: to add combined trainer with gaussian and cutout.

@@ -51,6 +51,55 @@ class GuassianAdder:
         return input_images + _noise
 
 
+class TensorCutout:
+    r"""
+    This function remove a box by randomly choose one part within image Tensor
+    """
+
+    def __init__(
+            self, min_box: int, max_box: int, pad_value: Union[int, float] = 0
+    ) -> None:
+        r"""
+        :param min_box: minimal box size
+        :param max_box: maxinmal box size
+        """
+        super().__init__()
+        self.min_box = int(min_box)
+        self.max_box = int(max_box)
+        self.pad_value = pad_value
+
+    def _cutout_per_image(self, image_tensor: Tensor) -> Tensor:
+        """
+        Here the input should be one tensor image.
+        :param image_tensor:
+        :return:
+        """
+        c, h, w = image_tensor.shape
+        r_img_tensor = (
+            image_tensor.copy()
+            if isinstance(image_tensor, np.ndarray)
+            else image_tensor.clone()
+        )
+        # find left, upper, right, lower
+        box_sz = np.random.randint(self.min_box, self.max_box + 1)
+        half_box_sz = int(np.floor(box_sz / 2.0))
+        x_c = np.random.randint(half_box_sz, w - half_box_sz)
+        y_c = np.random.randint(half_box_sz, h - half_box_sz)
+        box = (
+            x_c - half_box_sz,
+            y_c - half_box_sz,
+            x_c + half_box_sz,
+            y_c + half_box_sz,
+        )
+        r_img_tensor[:, box[1]: box[3], box[0]: box[2]] = self.pad_value
+        return r_img_tensor
+
+    def __call__(self, img_tensors: Tensor) -> Tensor:
+        assert isinstance(img_tensors, Tensor)
+        b, c, h, w = img_tensors.shape
+        r_img_tensors = torch.stack([self._cutout_per_image(img) for img in img_tensors], dim=0)
+        return r_img_tensors
+
 
 class VATReg:
 
@@ -87,13 +136,13 @@ class GeoReg:
                 and assert_list(simplex, tf2_pred_simplex)
                 and tf1_pred_simplex.__len__() == tf2_pred_simplex.__len__()
         ), f"Error on tf1 and tf2 predictions."
-        batch_loss: List[torch.Tensor] = []  # type: ignore
+        _batch_loss: List[torch.Tensor] = []  # type: ignore
         for subhead in range(tf1_pred_simplex.__len__()):
             _loss = self.kl_div(
                 tf2_pred_simplex[subhead], tf1_pred_simplex[subhead].detach()
             )
-            batch_loss.append(_loss)
-        batch_loss: torch.Tensor = sum(batch_loss) / len(batch_loss)  # type:ignore
+            _batch_loss.append(_loss)
+        batch_loss: torch.Tensor = sum(_batch_loss) / len(_batch_loss)  # type:ignore
         return batch_loss
 
 
@@ -122,7 +171,7 @@ class GaussianReg:
         self.gaussian_adder = GuassianAdder(gaussian_std)
         self.kl_div = KL_div(reduce=True)
 
-    def _gaussian_regularization(self, model: Model, tf1_images, tf1_pred_simplex: List[Tensor]):
+    def _gaussian_regularization(self, model: Model, tf1_images, tf1_pred_simplex: List[Tensor]) -> Tensor:
         """
         calculate predicton simplexes on gaussian noise tf1 images and the kl div of the original prediction simplex.
         :param tf1_images: tf1-transformed images
@@ -131,17 +180,40 @@ class GaussianReg:
         """
         _tf1_images_gaussian = self.gaussian_adder(tf1_images)
         _tf1_gaussian_simplex = model(_tf1_images_gaussian)
-        assert_list(simplex, tf1_pred_simplex)
-        assert_list(simplex, _tf1_gaussian_simplex)
+        assert assert_list(simplex, tf1_pred_simplex)
+        assert assert_list(simplex, _tf1_gaussian_simplex)
         assert tf1_pred_simplex.__len__() == _tf1_gaussian_simplex.__len__()
         reg_loss = []
         for __tf1_simplex, __tf1_gaussian_simplex in zip(tf1_pred_simplex, _tf1_gaussian_simplex):
-            reg_loss.append(self.kl_div(__tf1_gaussian_simplex, __tf1_simplex))
-        return sum(reg_loss) / len(reg_loss)
+            reg_loss.append(self.kl_div(__tf1_gaussian_simplex, __tf1_simplex.detach()))
+        return sum(reg_loss) / len(reg_loss)  # type: ignore
 
 
 class CutoutReg:
-    pass
+
+    def __init__(self, min_box: int = 6, max_box: int = 12, pad_value: float = 0.5) -> None:
+        super().__init__()
+        self.tensorcutout = TensorCutout(
+            min_box=min_box,
+            max_box=max_box,
+            pad_value=pad_value
+        )
+        print(
+            colored(f"Initialize `Cutout` with max_box={max_box}, min_box={min_box}, pad_value={pad_value}.", "green"))
+        self.kl_div = KL_div(reduce=True)
+
+    def _cutout_regularization(self, model, tf1_images: Tensor, tf1_pred_simplex: List[Tensor]) -> Tensor:
+        _tf1_cutout_images = self._cutout_images(tf1_images)
+        _tf1_cutout_pred_simplex = model(_tf1_cutout_images)
+        _loss: List[Tensor] = []
+        for head_num, (_tf1_cutout_pred, _tf1_pred) in enumerate(zip(_tf1_cutout_pred_simplex, tf1_pred_simplex)):
+            _loss.append(self.kl_div(_tf1_cutout_pred, _tf1_pred.detach()))
+        loss: Tensor = sum(_loss) / len(_loss)  # type: ignore
+        return loss
+
+    def _cutout_images(self, image):
+        b, c, h, w = image.shape
+        return self.tensorcutout(image)
 
 
 class ClusteringGeneralTrainer(_Trainer):
