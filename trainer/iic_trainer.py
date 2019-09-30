@@ -227,7 +227,7 @@ class IICGaussianTrainer(IICGeoTrainer, GaussianReg):
         return batch_loss
 
 
-# cutout
+# todo: check cutout
 class IICCutoutTrainer(IICGeoTrainer, CutoutReg):
 
     def __init__(self, model: Model, train_loader_A: DataLoader, train_loader_B: DataLoader, val_loader: DataLoader,
@@ -245,6 +245,7 @@ class IICCutoutTrainer(IICGeoTrainer, CutoutReg):
         batch_loss = super()._trainer_specific_loss(tf1_images, tf2_images, head_name)
         return batch_loss
 
+# highlight: we have now GEO, VAT, MIXUP, GAUSSIAN, AND CUTOUT, 5 types of transformations
 
 # GEO+VAT
 class IICGeoVATTrainer(IICVATTrainer):

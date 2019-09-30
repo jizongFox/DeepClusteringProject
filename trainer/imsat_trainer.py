@@ -340,7 +340,10 @@ class IMSATCutoutTrainer(IMSATAbstractTrainer, CutoutReg):
         return dict_filter(report_dict)  # type: ignore
 
 
-# VAT+GEO
+# highlight: we have now GEO, VAT, MIXUP, GAUSSIAN, AND CUTOUT, 5 types of transformations
+
+
+# GEO+VAT
 class IMSATVATGeoTrainer(IMSATAbstractTrainer, VATReg, GeoReg):
     """
     This class extends IMSATVATTrainer in order to link the two geometric transformations by a KL divergence
@@ -437,7 +440,7 @@ class IMSATVATMixupTrainer(IMSATMixupTrainer, VATReg):
 
 
 # GEO+Mixup
-class IMSATGeoMixup(IMSATMixupTrainer, GeoReg):
+class IMSATGeoMixupTrainer(IMSATMixupTrainer, GeoReg):
 
     def __init_meters__(self) -> List[Union[str, List[str]]]:
         columns = super().__init_meters__()
@@ -459,7 +462,7 @@ class IMSATGeoMixup(IMSATMixupTrainer, GeoReg):
         return mixup_loss + geo_loss
 
 
-# VAT+GEO+Mixup
+# GEO+VAT+Mixup
 class IMSATVATGeoMixupTrainer(IMSATVATMixupTrainer, GeoReg):
 
     def __init__(self, model: Model, train_loader_A: DataLoader, train_loader_B: DataLoader, val_loader: DataLoader,
@@ -500,7 +503,7 @@ class IMSATVATGeoMixupTrainer(IMSATVATMixupTrainer, GeoReg):
 
 
 # IMSATVAT+IICGeo
-class IMSATVATIICGeo(IMSATVATTrainer):
+class IMSATVATIICGeoTrainer(IMSATVATTrainer):
     """
     This is to add IIC with IMSAT. IIC here is a regularization
     """
@@ -551,4 +554,280 @@ class IMSATVATIICGeo(IMSATVATTrainer):
         self.METERINTERFACE[f"train_head_{head_name}"].add(-batch_loss.item())  # type: ignore
         return batch_loss + vat_loss
 
-# todo: to add combined trainer with gaussian and cutout.
+
+# highlight: adding gaussian series:
+
+# Gaussian + Geo
+class IMSATGeoGaussianTrainer(IMSATGaussianTrainer, GeoReg):
+    """
+    Combine the IMSAT+gaussian trainer with Geo Regularization
+    """
+
+    def __init_meters__(self) -> List[Union[str, List[str]]]:
+        columns = super().__init_meters__()
+        self.METERINTERFACE.register_new_meter("train_geo", AverageValueMeter())
+        columns.insert(-2, "train_geo_mean")
+        return columns
+
+    @property
+    def _training_report_dict(self):
+        report_dict = super()._training_report_dict
+        report_dict.update({"train_geo": self.METERINTERFACE["train_geo"].summary()["mean"]})
+        return dict_filter(report_dict)
+
+    def _regulaze(self, images: Tensor, tf_images: Tensor, img_pred_simplex: List[Tensor],
+                  head_name: str = "B") -> Tensor:
+        gaussian_reg = super()._regulaze(images, tf_images, img_pred_simplex, head_name)
+        tf_pred_simplex = self.model(tf_images)
+        # dimension check
+        assert assert_list(simplex, tf_pred_simplex)
+        assert assert_list(simplex, img_pred_simplex)
+        assert len(tf_pred_simplex) == len(img_pred_simplex)
+        geo_reg = self._geo_regularization(img_pred_simplex, tf_pred_simplex)
+        self.METERINTERFACE["train_geo"].add(geo_reg.item())
+        return gaussian_reg + geo_reg
+
+
+# Gaussian + VAT
+class IMSATVATGaussianTrainer(IMSATVATTrainer, GaussianReg):
+
+    def __init__(self, model: Model, train_loader_A: DataLoader, train_loader_B: DataLoader, val_loader: DataLoader,
+                 max_epoch: int = 100, save_dir: str = "IMSATAbstractTrainer", checkpoint_path: str = None,
+                 device="cpu", head_control_params: Dict[str, int] = {"B": 1}, use_sobel: bool = False,
+                 config: dict = None, MI_params: dict = {"mu": 4}, VAT_params: dict = {"eps": 1},
+                 Gaussian_params: dict = {}, **kwargs) -> None:
+        IMSATVATTrainer.__init__(self, model, train_loader_A, train_loader_B, val_loader, max_epoch, save_dir,
+                                 checkpoint_path, device, head_control_params, use_sobel, config, MI_params, VAT_params,
+                                 **kwargs)
+        GaussianReg.__init__(self, **Gaussian_params)
+
+    def __init_meters__(self) -> List[Union[str, List[str]]]:
+        columns = super().__init_meters__()
+        self.METERINTERFACE.register_new_meter("train_gaussian", AverageValueMeter())
+        columns.insert(-2, "train_gaussian_mean")
+        return columns
+
+    @property
+    def _training_report_dict(self):
+        report_dict = super()._training_report_dict()
+        report_dict.update({"train_gaussian": self.METERINTERFACE["train_gaussian"].summary()["mean"]})
+        return dict_filter(report_dict)
+
+    def _regulaze(self, images: Tensor, tf_images: Tensor, img_pred_simplex: List[Tensor], head_name="B") -> Tensor:
+        return super()._regulaze(images, tf_images, img_pred_simplex, head_name)
+
+
+# Gaussian + mixup
+class IMSATMixupGaussianTrainer(IMSATMixupTrainer, GaussianReg):
+
+    def __init__(self, model: Model, train_loader_A: DataLoader, train_loader_B: DataLoader, val_loader: DataLoader,
+                 max_epoch: int = 100, save_dir: str = "IMSATMixupGaussianTrainer", checkpoint_path: str = None,
+                 device="cpu", head_control_params: Dict[str, int] = {"B": 1}, use_sobel: bool = False,
+                 config: dict = None, MI_params: dict = {}, Gaussian_params: dict = {}, **kwargs) -> None:
+        IMSATMixupTrainer.__init__(self, model, train_loader_A, train_loader_B, val_loader, max_epoch, save_dir,
+                                   checkpoint_path, device, head_control_params, use_sobel, config, MI_params, **kwargs)
+        GaussianReg.__init__(**Gaussian_params)
+
+    def __init_meters__(self) -> List[Union[str, List[str]]]:
+        columns = super().__init_meters__()
+        self.METERINTERFACE.register_new_meter("train_gaussian", AverageValueMeter())
+        columns.insert(-1, "train_gaussian_mean")
+        return columns
+
+    @property
+    def _training_report_dict(self):
+        report_dict = super()._training_report_dict
+        report_dict.update({"train_gaussian": self.METERINTERFACE["train_gaussian"]})
+        return dict_filter(report_dict)
+
+    def _regulaze(self, images: Tensor, tf_images: Tensor, img_pred_simplex: List[Tensor], head_name="B") -> Tensor:
+        mixup_reg = super()._regulaze(images, tf_images, img_pred_simplex, head_name)
+        gaussian_reg = self._gaussian_regularization(self.model, images, img_pred_simplex)
+        self.METERINTERFACE["train_gaussian"].add(gaussian_reg.item())
+        return mixup_reg + gaussian_reg
+
+
+# cutout + geo
+class IMSATGeoCutoutTrainer(IMSATCutoutTrainer, GeoReg):
+
+    def __init_meters__(self) -> List[Union[str, List[str]]]:
+        columns = super().__init_meters__()
+        self.METERINTERFACE.register_new_meter("train_gaussian", AverageValueMeter())
+        columns.insert(-1, "train_gaussian_mean")
+        return columns
+
+    @property
+    def _training_report_dict(self):
+        report_dict = super()._training_report_dict
+        report_dict.update({"train_gaussian": self.METERINTERFACE["train_gaussian"].summary()["mean"]})
+        return dict_filter(report_dict)
+
+    def _regulaze(self, images: Tensor, tf_images: Tensor, img_pred_simplex: List[Tensor],
+                  head_name: str = "B") -> Tensor:
+        cutout_reg = super()._regulaze(images, tf_images, img_pred_simplex, head_name)
+        tf_pred_simplex = self.model(tf_images)
+        geo_reg = self._geo_regularization(img_pred_simplex, tf_pred_simplex)
+        return cutout_reg + geo_reg
+
+
+# cutout+VAT
+class IMSATVATCutoutTrainer(IMSATVATTrainer, CutoutReg):
+
+    def __init__(self, model: Model, train_loader_A: DataLoader, train_loader_B: DataLoader, val_loader: DataLoader,
+                 max_epoch: int = 100, save_dir: str = "IMSATVATCutoutTrainer", checkpoint_path: str = None,
+                 device="cpu", head_control_params: Dict[str, int] = {"B": 1}, use_sobel: bool = False,
+                 config: dict = None, MI_params: dict = {"mu": 4}, VAT_params: dict = {"eps": 1},
+                 Cutout_params: dict = {}, **kwargs) -> None:
+        IMSATVATTrainer.__init__(self, model, train_loader_A, train_loader_B, val_loader, max_epoch, save_dir,
+                                 checkpoint_path, device, head_control_params, use_sobel, config, MI_params, VAT_params,
+                                 **kwargs)
+        CutoutReg.__init__(self, **Cutout_params)
+
+    def __init_meters__(self) -> List[Union[str, List[str]]]:
+        columns = super().__init_meters__()
+        self.METERINTERFACE.register_new_meter("train_cutout", AverageValueMeter())
+        columns.insert(-1, "train_cutout_mean")
+        return columns
+
+    @property
+    def _training_report_dict(self):
+        report_dict = super()._training_report_dict
+        report_dict.update({"train_cutout": self.METERINTERFACE["train_cutout"].summary()["mean"]})
+        return filter(report_dict)
+
+    def _regulaze(self, images: Tensor, tf_images: Tensor, img_pred_simplex: List[Tensor], head_name="B") -> Tensor:
+        vat_reg = super()._regulaze(images, tf_images, img_pred_simplex, head_name)
+        gaussian_reg = self._cutout_regularization(self.model, images, img_pred_simplex)
+        return vat_reg + gaussian_reg
+
+
+# cutout + mixup
+class IMSATMixupCutoutTrainer(IMSATMixupTrainer, CutoutReg):
+
+    def __init__(self, model: Model, train_loader_A: DataLoader, train_loader_B: DataLoader, val_loader: DataLoader,
+                 max_epoch: int = 100, save_dir: str = "IMSATAbstractTrainer", checkpoint_path: str = None,
+                 device="cpu", head_control_params: Dict[str, int] = {"B": 1}, use_sobel: bool = False,
+                 config: dict = None, MI_params: dict = {}, Cutout_params={}, **kwargs) -> None:
+        IMSATMixupTrainer.__init__(self, model, train_loader_A, train_loader_B, val_loader, max_epoch, save_dir,
+                                   checkpoint_path, device, head_control_params, use_sobel, config, MI_params, **kwargs)
+        CutoutReg.__init__(self, **Cutout_params)
+
+    def __init_meters__(self) -> List[Union[str, List[str]]]:
+        columns = super().__init_meters__()
+        self.METERINTERFACE.register_new_meter("train_cutout", AverageValueMeter())
+        columns.insert(-1, "train_cutout_mean")
+        return columns
+
+    @property
+    def _training_report_dict(self):
+        report_dict = super()._training_report_dict
+        report_dict.update({"train_cutout": self.METERINTERFACE["train_cutout"].summary()["mean"]})
+        return report_dict
+
+    def _regulaze(self, images: Tensor, tf_images: Tensor, img_pred_simplex: List[Tensor], head_name="B") -> Tensor:
+        mixup_reg = super()._regulaze(images, tf_images, img_pred_simplex, head_name)
+        cutout_reg = self._cutout_regularization(self.model, images, img_pred_simplex)
+        return mixup_reg + cutout_reg
+
+
+# cutout+ gaussian
+class IMSATCutoutGaussianTrainer(IMSATCutoutTrainer, GaussianReg):
+    def __init__(self, model: Model, train_loader_A: DataLoader, train_loader_B: DataLoader, val_loader: DataLoader,
+                 max_epoch: int = 100, save_dir: str = "IMSATAbstractTrainer", checkpoint_path: str = None,
+                 device="cpu", head_control_params: Dict[str, int] = {"B": 1}, use_sobel: bool = False,
+                 config: dict = None, MI_params: dict = {}, Cutout_params: dict = {}, Gaussian_params: dict = {},
+                 **kwargs) -> None:
+        IMSATCutoutTrainer.__init__(self, model, train_loader_A, train_loader_B, val_loader, max_epoch, save_dir,
+                                    checkpoint_path, device, head_control_params, use_sobel, config, MI_params,
+                                    Cutout_params, **kwargs)
+        GaussianReg.__init__(self, **Gaussian_params)
+
+    def __init_meters__(self) -> List[Union[str, List[str]]]:
+        columns = super().__init_meters__()
+        self.METERINTERFACE.register_new_meter("train_gaussian", AverageValueMeter())
+        columns.insert(-1, "train_gaussian_mean")
+        return columns
+
+    def _regulaze(self, images: Tensor, tf_images: Tensor, img_pred_simplex: List[Tensor],
+                  head_name: str = "B") -> Tensor:
+        cutout_reg = super()._regulaze(images, tf_images, img_pred_simplex, head_name)
+        gaussian_reg = self._gaussian_regularization(self.model, images, img_pred_simplex)
+        return cutout_reg + gaussian_reg
+
+    @property
+    def _training_report_dict(self):
+        report_dict = super()._training_report_dict
+        report_dict.update({"train_gaussian": self.METERINTERFACE["train_gaussian"].summary()["mean"]})
+        return dict_filter(report_dict)
+
+
+# combian a lot of transforms together
+
+# geo+ vat+ cutout
+class IMSATGeoVATCutoutTrainer(IMSATVATGeoTrainer, CutoutReg):
+
+    def __init__(self, model: Model, train_loader_A: DataLoader, train_loader_B: DataLoader, val_loader: DataLoader,
+                 max_epoch: int = 100, save_dir: str = "IMSATAbstractTrainer", checkpoint_path: str = None,
+                 device="cpu", head_control_params: Dict[str, int] = {"B": 1}, use_sobel: bool = False,
+                 config: dict = None, MI_params: dict = {"mu": 4.0}, VAT_params={"eps": 10}, Cutout_params: dict = {},
+                 **kwargs) -> None:
+        IMSATVATGeoTrainer.__init__(self, model, train_loader_A, train_loader_B, val_loader, max_epoch, save_dir,
+                                    checkpoint_path, device, head_control_params, use_sobel, config, MI_params,
+                                    VAT_params, **kwargs)
+        CutoutReg.__init__(self, **Cutout_params)
+
+    def __init_meters__(self) -> List[Union[str, List[str]]]:
+        columns = super().__init_meters__()
+        self.METERINTERFACE.register_new_meter("train_cutout", AverageValueMeter())
+        columns.insert(-1, "train_cutout_mean")
+        return columns
+
+    @property
+    def _training_report_dict(self):
+        report_dict = super()._training_report_dict
+        report_dict.update({"train_cutout": self.METERINTERFACE["train_cutout"].summary()["mean"]})
+        return dict_filter(report_dict)
+
+    def _regulaze(self, images: Tensor, tf_images: Tensor, img_pred_simplex: List[Tensor], head_name="B") -> Tensor:
+        vat_geo_reg = super()._regulaze(images, tf_images, img_pred_simplex, head_name)
+        cutout_reg = self._cutout_regularization(self.model, images, img_pred_simplex)
+        return vat_geo_reg + cutout_reg
+
+
+# geo + vat + gaussian
+class IMSATGeoVATGaussianTrainer(IMSATVATGaussianTrainer, GeoReg):
+
+    def _regulaze(self, images: Tensor, tf_images: Tensor, img_pred_simplex: List[Tensor], head_name="B") -> Tensor:
+        vat_gaussian_reg = super()._regulaze(images, tf_images, img_pred_simplex, head_name)
+        tf_pred_simplex = self.model(tf_images)
+        geo_reg = self._geo_regularization(img_pred_simplex, tf_pred_simplex)
+        return geo_reg + vat_gaussian_reg
+
+
+# geo + mixup + cuout
+class IMSATGeoMixupCutoutTrainer(IMSATMixupCutoutTrainer, GeoReg):
+
+    def _regulaze(self, images: Tensor, tf_images: Tensor, img_pred_simplex: List[Tensor], head_name="B") -> Tensor:
+        mixup_cutout_reg = super()._regulaze(images, tf_images, img_pred_simplex, head_name)
+        tf1_pred_simplex = self.model(tf_images)
+        geo_reg = self._geo_regularization(img_pred_simplex, tf1_pred_simplex)
+        return mixup_cutout_reg + geo_reg
+
+
+# geo +vat +cutout+ gaussian
+class IMSATGeoVATCutoutGaussianTrainer(IMSATGeoVATCutoutTrainer, GaussianReg):
+
+    def __init__(self, model: Model, train_loader_A: DataLoader, train_loader_B: DataLoader, val_loader: DataLoader,
+                 max_epoch: int = 100, save_dir: str = "IMSATAbstractTrainer", checkpoint_path: str = None,
+                 device="cpu", head_control_params: Dict[str, int] = {"B": 1}, use_sobel: bool = False,
+                 config: dict = None, MI_params: dict = {"mu": 4.0}, VAT_params={"eps": 10}, Cutout_params: dict = {},
+                 Gaussian_params={}, **kwargs) -> None:
+        IMSATGeoVATCutoutTrainer.__init__(self, model, train_loader_A, train_loader_B, val_loader, max_epoch, save_dir,
+                                          checkpoint_path, device, head_control_params, use_sobel, config, MI_params,
+                                          VAT_params, Cutout_params, **kwargs)
+        GaussianReg.__init__(self, **Gaussian_params)
+
+    def _regulaze(self, images: Tensor, tf_images: Tensor, img_pred_simplex: List[Tensor], head_name="B") -> Tensor:
+        geo_vat_cutout_reg = super()._regulaze(images, tf_images, img_pred_simplex, head_name)
+        gaussian_reg = self._gaussian_regularization(self.model, images, img_pred_simplex)
+        return geo_vat_cutout_reg + gaussian_reg
