@@ -245,6 +245,7 @@ class IICCutoutTrainer(IICGeoTrainer, CutoutReg):
         batch_loss = super()._trainer_specific_loss(tf1_images, tf2_images, head_name)
         return batch_loss
 
+
 # highlight: we have now GEO, VAT, MIXUP, GAUSSIAN, AND CUTOUT, 5 types of transformations
 
 # GEO+VAT
@@ -316,3 +317,20 @@ class IICGeoVATMixupTrainer(IICVatMixupTrainer):
         vat_mixup_loss = super()._trainer_specific_loss(tf1_images, tf2_images, head_name)
         geo_loss = IICGeoTrainer._trainer_specific_loss(self, tf1_images, tf2_images, head_name)
         return vat_mixup_loss + geo_loss
+
+
+# GEO + Cutout
+class IICGeoCutoutTrainer(IICCutoutTrainer):
+    def _trainer_specific_loss(self, tf1_images: Tensor, tf2_images: Tensor, head_name: str):
+        cutout_loss = super()._trainer_specific_loss(tf1_images, tf2_images, head_name)
+        geo_loss = IICGeoTrainer._trainer_specific_loss(self, tf1_images, tf2_images, head_name)
+        return cutout_loss + geo_loss
+
+
+# GEO + Gaussian
+class IICGeoGaussianTrainer(IICGaussianTrainer):
+    def _trainer_specific_loss(self, tf1_images: Tensor, tf2_images: Tensor, head_name: str):
+        gaussian_loss = super()._trainer_specific_loss(tf1_images, tf2_images, head_name)
+        geo_loss = IICGeoTrainer._trainer_specific_loss(self, tf1_images, tf2_images, head_name)
+        return gaussian_loss + geo_loss
+# GEO +

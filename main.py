@@ -8,42 +8,10 @@ from deepclustering.utils import fix_all_seed
 from torch.utils.data import DataLoader
 
 import trainer
+from trainer import trainer_mapping
 
 DATA_PATH = Path(".data")
 DATA_PATH.mkdir(exist_ok=True)
-
-trainer_mapping: Dict[str, Type[trainer.ClusteringGeneralTrainer]] = {
-    # using different transforms for iic
-    # ToDo: add cutout or gaussian if it is necessary
-    "iicgeo": trainer.IICGeoTrainer,  # the basic iic
-    "iicmixup": trainer.IICMixupTrainer,  # the basic IIC with mixup as the data augmentation
-    "iicvat": trainer.IICVATTrainer,  # the basic iic with VAT as the basic data augmentation
-    "iicgaussian": trainer.IICGaussianTrainer,  # the basic iic with gaussian data augmentation
-    "iiccutout": trainer.IICCutoutTrainer,  # the basic iic with cutout as data augmentation
-    "iicgeovat": trainer.IICGeoVATTrainer,  # IIC with geo and vat as the data augmentation
-    "iicgeomixup": trainer.IICGeoMixupTrainer,  # IIC with geo and mixup as the data augmentation
-    "iicgeovatmixup": trainer.IICGeoVATMixupTrainer,  # IIC with geo, vat and mixup as the data augmentation
-    # using different regularization for iic
-    "iicgeovatreg": trainer.IICVAT_RegTrainer,  # iicgeo with VAT as a regularization
-    "iicgeomixupreg": trainer.IICMixup_RegTrainer,  # iicgeo with mixup as a regularization
-    "iicgeovatmixupreg": trainer.IICVATMixup_RegTrainer,  # iicgeo with VAT and mixup as a regularization
-    "iicgeovatvatreg": trainer.IICVATVAT_RegTrainer,  # iicgeo with VAT and VAT as regularization
-    "iicvatmivatklreg": trainer.IICVATMI_VATKL,  # special case of IIC with regularization,
-    # using VAT_mi for IIC and VAT_kl for Regularization
-
-    # using different regularization for imsat
-    "imsat": trainer.IMSATAbstractTrainer,  # imsat without any regularization
-    "imsatvat": trainer.IMSATVATTrainer,  # imsat with vat
-    "imsatgeo": trainer.IMSATGeoTrainer,  # imsat with geo transformation
-    "imsatmixup": trainer.IMSATMixupTrainer,  # imsat with mixup
-    "imsatgaussian": trainer.IMSATGaussianTrainer,  # imsat with gaussian noise
-    "imsatcutout": trainer.IMSATCutoutTrainer,  # imsat with cutout transform
-    "imsatvatmixup": trainer.IMSATVATMixupTrainer,  # imsat with vat + mixup
-    "imsatvatgeo": trainer.IMSATVATGeoTrainer,  # imsat with geo+vat
-    "imsatgeomixup": trainer.IMSATGeoMixup,  # imsat with geo and mixup
-    "imsatvatgeomixup": trainer.IMSATVATGeoMixupTrainer,  # imsat with geo vat and mixup
-    "imsatvatiicgeo": trainer.IMSATVATIICGeo  # using IMSATVAT with IIC regularization
-}
 
 
 def get_trainer(config: Dict[str, Union[float, int, dict]]) -> Type[trainer.ClusteringGeneralTrainer]:

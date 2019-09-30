@@ -171,7 +171,8 @@ class GaussianReg:
         self.gaussian_adder = GuassianAdder(gaussian_std)
         self.kl_div = KL_div(reduce=True)
 
-    def _gaussian_regularization(self, model: Model, tf1_images, tf1_pred_simplex: List[Tensor]) -> Tensor:
+    def _gaussian_regularization(self, model: Model, tf1_images, tf1_pred_simplex: List[Tensor], head_name="B") -> Tensor:
+
         """
         calculate predicton simplexes on gaussian noise tf1 images and the kl div of the original prediction simplex.
         :param tf1_images: tf1-transformed images
@@ -179,7 +180,7 @@ class GaussianReg:
         :return:  loss
         """
         _tf1_images_gaussian = self.gaussian_adder(tf1_images)
-        _tf1_gaussian_simplex = model(_tf1_images_gaussian)
+        _tf1_gaussian_simplex = model(_tf1_images_gaussian,head=head_name)
         assert assert_list(simplex, tf1_pred_simplex)
         assert assert_list(simplex, _tf1_gaussian_simplex)
         assert tf1_pred_simplex.__len__() == _tf1_gaussian_simplex.__len__()
@@ -202,9 +203,9 @@ class CutoutReg:
             colored(f"Initialize `Cutout` with max_box={max_box}, min_box={min_box}, pad_value={pad_value}.", "green"))
         self.kl_div = KL_div(reduce=True)
 
-    def _cutout_regularization(self, model, tf1_images: Tensor, tf1_pred_simplex: List[Tensor]) -> Tensor:
+    def _cutout_regularization(self, model, tf1_images: Tensor, tf1_pred_simplex: List[Tensor], head_name="B") -> Tensor:
         _tf1_cutout_images = self._cutout_images(tf1_images)
-        _tf1_cutout_pred_simplex = model(_tf1_cutout_images)
+        _tf1_cutout_pred_simplex = model(_tf1_cutout_images,head= head_name)
         _loss: List[Tensor] = []
         for head_num, (_tf1_cutout_pred, _tf1_pred) in enumerate(zip(_tf1_cutout_pred_simplex, tf1_pred_simplex)):
             _loss.append(self.kl_div(_tf1_cutout_pred, _tf1_pred.detach()))
