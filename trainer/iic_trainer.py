@@ -1,5 +1,6 @@
 __all__ = ["IICMixupTrainer", "IICGeoVATMixupTrainer", "IICGeoVATTrainer", "IICGeoTrainer", "IICVATTrainer",
-           "IICGaussianTrainer", "IICCutoutTrainer", "IICGeoMixupTrainer", "IICVatMixupTrainer"]
+           "IICGaussianTrainer", "IICCutoutTrainer", "IICGeoMixupTrainer", "IICVatMixupTrainer",
+           "IICGeoGaussianTrainer", "IICGeoCutoutTrainer"]
 from typing import List, Union, Dict
 
 import torch
@@ -333,4 +334,3 @@ class IICGeoGaussianTrainer(IICGaussianTrainer):
         gaussian_loss = super()._trainer_specific_loss(tf1_images, tf2_images, head_name)
         geo_loss = IICGeoTrainer._trainer_specific_loss(self, tf1_images, tf2_images, head_name)
         return gaussian_loss + geo_loss
-# GEO +

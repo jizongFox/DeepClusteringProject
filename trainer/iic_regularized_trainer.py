@@ -1,5 +1,8 @@
 __all__ = ["IICMixup_RegTrainer", "IICGeoTrainer", "IICVATMixup_RegTrainer", "IICVAT_RegTrainer",
-           "IICVATVAT_RegTrainer", "IICVATMI_VATKLTrainer"]
+           "IICVATVAT_RegTrainer", "IICVATMI_VATKLTrainer", "IICCutout_RegTrainer", "IICGaussian_RegTrainer",
+           "IICMixupCutout_RegTrainer", "IICMixupCutoutGaussian_RegTrainer", "IICMixupGaussian_RegTrainer",
+           "IICVATCutout_RegTrainer", "IICVATCutoutGaussian_RegTrainer", "IICVATGaussian_RegTrainer",
+           "IICVATMixupCutout_RegTrainer"]
 from copy import deepcopy as dcp
 from typing import Union, Dict, List
 

@@ -1,6 +1,9 @@
 __all__ = ["IMSATAbstractTrainer", "IMSATVATGeoMixupTrainer", "IMSATVATGeoTrainer", "IMSATVATTrainer",
            "IMSATMixupTrainer", "IMSATGaussianTrainer", "IMSATCutoutTrainer", "IMSATVATMixupTrainer", "IMSATGeoTrainer",
-           "IMSATGeoMixup", "IMSATVATIICGeo"]
+           "IMSATGeoMixupTrainer", "IMSATVATIICGeoTrainer", "IMSATCutoutGaussianTrainer", "IMSATGeoCutoutTrainer",
+           "IMSATGeoGaussianTrainer", "IMSATGeoVATCutoutGaussianTrainer", "IMSATGeoMixupCutoutTrainer",
+           "IMSATGeoVATCutoutTrainer", "IMSATGeoVATGaussianTrainer", "IMSATMixupCutoutTrainer",
+           "IMSATMixupGaussianTrainer", "IMSATVATCutoutTrainer", "IMSATVATGaussianTrainer"]
 from typing import List, Union, Dict
 
 import torch
