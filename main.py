@@ -36,6 +36,29 @@ def get_dataloader(config: Dict[str, Union[float, int, dict, str]], DEFAULT_CONF
         train_split_partition = ["train", "val"]
         val_split_partition = ["train", "val"]
         dataset_name = "cifar"
+
+    elif config.get("Config", DEFAULT_CONFIG).split("_")[-1].lower() == "cifar20.yaml":
+        from datasets import (
+            cifar10_naive_transform as naive_transforms,
+            cifar10_strong_transform as strong_transforms,
+            Cifar20ClusteringDatasetInterface as DatasetInterface,
+        )
+        print("Checkout CIFAR20 dataset with transforms:")
+        train_split_partition = ["train", "val"]
+        val_split_partition = ["train", "val"]
+        dataset_name = "cifar20"
+
+    elif config.get("Config", DEFAULT_CONFIG).split("_")[-1].lower() == "cifar100.yaml":
+        from datasets import (
+            cifar10_naive_transform as naive_transforms,
+            cifar10_strong_transform as strong_transforms,
+            Cifar100ClusteringDatasetInterface as DatasetInterface,
+        )
+        print("Checkout CIFAR100 dataset with transforms:")
+        train_split_partition = ["train", "val"]
+        val_split_partition = ["train", "val"]
+        dataset_name = "cifar100"
+
     elif config.get("Config", DEFAULT_CONFIG).split("_")[-1].lower() == "mnist.yaml":
         from datasets import (
             mnist_naive_transform as naive_transforms,
@@ -46,6 +69,7 @@ def get_dataloader(config: Dict[str, Union[float, int, dict, str]], DEFAULT_CONF
         train_split_partition = ["train", "val"]
         val_split_partition = ["train", "val"]
         dataset_name = "mnist"
+
     elif config.get("Config", DEFAULT_CONFIG).split("_")[-1].lower() == "stl10.yaml":
         from datasets import (
             stl10_strong_transform as strong_transforms,
@@ -56,6 +80,7 @@ def get_dataloader(config: Dict[str, Union[float, int, dict, str]], DEFAULT_CONF
         val_split_partition = ["train", "test"]
         print("Checkout STL-10 dataset with transforms:")
         dataset_name = "stl10"
+
     elif config.get("Config", DEFAULT_CONFIG).split("_")[-1].lower() == "svhn.yaml":
         from datasets import (
             svhn_naive_transform as naive_transforms,
@@ -66,6 +91,7 @@ def get_dataloader(config: Dict[str, Union[float, int, dict, str]], DEFAULT_CONF
         train_split_partition = ["train", "test"]
         val_split_partition = ["train", "test"]
         dataset_name = "svhn"
+
     else:
         raise NotImplementedError(
             config.get("Config", DEFAULT_CONFIG).split("_")[-1].lower()

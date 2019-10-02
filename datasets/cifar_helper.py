@@ -1,13 +1,14 @@
-__all__ = ["Cifar10ClusteringDatasetInterface", "Cifar10SemiSupervisedDatasetInterface", "cifar10_naive_transform",
+__all__ = ["Cifar10ClusteringDatasetInterface", "Cifar10SemiSupervisedDatasetInterface",
+           "Cifar20ClusteringDatasetInterface", "Cifar100ClusteringDatasetInterface",
+           "cifar10_naive_transform",
            "cifar10_strong_transform"]
-
 from functools import reduce
 from typing import *
 
 from deepclustering.augment import TransformInterface
 from torch.utils.data import Dataset
 
-from .cifar import CIFAR10
+from .cifar import CIFAR10, CIFAR20, CIFAR100
 from .clustering_helper import ClusterDatasetInterface
 from .semi_helper import SemiDatasetInterface
 
@@ -107,6 +108,24 @@ class Cifar10SemiSupervisedDatasetInterface(SemiDatasetInterface):
             **kwargs,
         )
         return train_set, val_set
+
+
+# todo add cifar20 for clustering
+class Cifar20ClusteringDatasetInterface(Cifar10ClusteringDatasetInterface):
+
+    def __init__(self, data_root=None, split_partitions: List[str] = ["train", "val"], batch_size: int = 1,
+                 shuffle: bool = False, num_workers: int = 1, pin_memory: bool = True) -> None:
+        super().__init__(data_root, split_partitions, batch_size, shuffle, num_workers, pin_memory)
+        self.DataClass = CIFAR20  # replace that for cifar20
+
+
+# todo add cifar100 for clustering
+class Cifar100ClusteringDatasetInterface(Cifar10ClusteringDatasetInterface):
+
+    def __init__(self, data_root=None, split_partitions: List[str] = ["train", "val"], batch_size: int = 1,
+                 shuffle: bool = False, num_workers: int = 1, pin_memory: bool = True) -> None:
+        super().__init__(data_root, split_partitions, batch_size, shuffle, num_workers, pin_memory)
+        self.DataClass = CIFAR100  # replace that for cifar100
 
 
 # taken from IIC paper:
