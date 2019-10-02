@@ -537,7 +537,7 @@ class IMSATVATIICGeoTrainer(IMSATVATTrainer):
 
     @property
     def _training_report_dict(self):
-        report_dict = super(IMSATVATIICGeo, self)._training_report_dict
+        report_dict = super(IMSATVATIICGeoTrainer, self)._training_report_dict
         report_dict.update({
             "train_head_A": self.METERINTERFACE["train_head_A"].summary()["mean"],
             "train_head_B": self.METERINTERFACE["train_head_B"].summary()["mean"]
