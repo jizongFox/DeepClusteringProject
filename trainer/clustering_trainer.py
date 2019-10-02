@@ -104,7 +104,7 @@ class TensorCutout:
 class VATReg:
 
     def __init__(self, VAT_params: Dict[str, Union[str, float]] = {"eps": 10}, MeterInterface=None) -> None:
-        super().__init__()
+        # super().__init__()
 
         self.VAT_params = VAT_params
         self.vat_module = VATModuleInterface(VAT_params)
@@ -122,7 +122,7 @@ class VATReg:
 class GeoReg:
 
     def __init__(self) -> None:
-        super().__init__()
+        # super().__init__()
         self.kl_div = KL_div(reduce=True)
 
     def _geo_regularization(self, tf1_pred_simplex, tf2_pred_simplex) -> Tensor:
@@ -149,7 +149,7 @@ class GeoReg:
 class MixupReg:
 
     def __init__(self) -> None:
-        super().__init__()
+        # super().__init__()
         self.mixup_module = MixUp(self.device, num_classes=self.model.arch_dict["output_k_B"])
         self.kl_div = KL_div(reduce=True)
 
@@ -167,12 +167,12 @@ class MixupReg:
 class GaussianReg:
 
     def __init__(self, gaussian_std: float = 0.1) -> None:
-        super().__init__()
+        # super().__init__()
         self.gaussian_adder = GuassianAdder(gaussian_std)
         self.kl_div = KL_div(reduce=True)
 
-    def _gaussian_regularization(self, model: Model, tf1_images, tf1_pred_simplex: List[Tensor], head_name="B") -> Tensor:
-
+    def _gaussian_regularization(self, model: Model, tf1_images, tf1_pred_simplex: List[Tensor],
+                                 head_name="B") -> Tensor:
         """
         calculate predicton simplexes on gaussian noise tf1 images and the kl div of the original prediction simplex.
         :param tf1_images: tf1-transformed images
@@ -180,7 +180,7 @@ class GaussianReg:
         :return:  loss
         """
         _tf1_images_gaussian = self.gaussian_adder(tf1_images)
-        _tf1_gaussian_simplex = model(_tf1_images_gaussian,head=head_name)
+        _tf1_gaussian_simplex = model.torchnet(_tf1_images_gaussian, head=head_name)
         assert assert_list(simplex, tf1_pred_simplex)
         assert assert_list(simplex, _tf1_gaussian_simplex)
         assert tf1_pred_simplex.__len__() == _tf1_gaussian_simplex.__len__()
@@ -192,8 +192,8 @@ class GaussianReg:
 
 class CutoutReg:
 
-    def __init__(self, min_box: int = 6, max_box: int = 12, pad_value: float = 0.5) -> None:
-        super().__init__()
+    def __init__(self, min_box: int = 6, max_box: int = 12, pad_value: float = 0.0) -> None:
+        # super().__init__()
         self.tensorcutout = TensorCutout(
             min_box=min_box,
             max_box=max_box,
@@ -203,9 +203,10 @@ class CutoutReg:
             colored(f"Initialize `Cutout` with max_box={max_box}, min_box={min_box}, pad_value={pad_value}.", "green"))
         self.kl_div = KL_div(reduce=True)
 
-    def _cutout_regularization(self, model, tf1_images: Tensor, tf1_pred_simplex: List[Tensor], head_name="B") -> Tensor:
+    def _cutout_regularization(self, model, tf1_images: Tensor, tf1_pred_simplex: List[Tensor],
+                               head_name="B") -> Tensor:
         _tf1_cutout_images = self._cutout_images(tf1_images)
-        _tf1_cutout_pred_simplex = model(_tf1_cutout_images,head= head_name)
+        _tf1_cutout_pred_simplex = model.torchnet(_tf1_cutout_images, head=head_name)
         _loss: List[Tensor] = []
         for head_num, (_tf1_cutout_pred, _tf1_pred) in enumerate(zip(_tf1_cutout_pred_simplex, tf1_pred_simplex)):
             _loss.append(self.kl_div(_tf1_cutout_pred, _tf1_pred.detach()))

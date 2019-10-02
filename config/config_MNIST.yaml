@@ -23,7 +23,6 @@ DataLoader:
   transforms: naive
 
 Trainer:
-  name: imsatvat
   max_epoch: 2
   save_dir: multihead_mnist
   device: cuda:0
@@ -32,6 +31,8 @@ Trainer:
     B: 1
   VAT_params:
     eps: 8.0
+  Gaussian_params:
+    gaussian_std: 0.05
   reg_weight: 0.001
 
 # for mnist dataset, imsat vat trainer VAT_params. eps should be greater than 10.

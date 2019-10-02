@@ -26,15 +26,18 @@ trainer_mapping: Dict[str, Type[ClusteringGeneralTrainer]] = {
     "imsatmixup": IMSATMixupTrainer,  # imsat with mixup
     "imsatgaussian": IMSATGaussianTrainer,  # imsat with gaussian noise # todo: checkout
     "imsatcutout": IMSATCutoutTrainer,  # imsat with cutout transform # todo: checkout
+    "imsatcutoutgaussian": IMSATCutoutGaussianTrainer,
     "imsatvatmixup": IMSATVATMixupTrainer,  # imsat with vat + mixup
     "imsatvatgeo": IMSATVATGeoTrainer,  # imsat with geo+vat
     "imsatgeomixup": IMSATGeoMixupTrainer,  # imsat with geo and mixup
+    "imsatgeocutout": IMSATGeoCutoutTrainer,
     "imsatvatgeomixup": IMSATVATGeoMixupTrainer,  # imsat with geo vat and mixup
     "imsatvatiicgeo": IMSATVATIICGeoTrainer,  # using IMSATVAT with IIC regularization # todo: checkout
     "imsatvatcutout": IMSATVATCutoutTrainer,  # todo: checkout
     "imsatmixupcutout": IMSATMixupCutoutTrainer,  # todo: checkout
-    "imsatgeovatgutoutgaussian": IMSATGeoVATCutoutGaussianTrainer,
-
+    "imsatvatmixupcutout": IMSATVATMixupCutoutTrainer,
+    "imsatgeovatcutoutgaussian": IMSATGeoVATCutoutGaussianTrainer,
+    "imsatgeovatcutout": IMSATGeoVATCutoutTrainer,
 
     # using different regularization for iic
     "iicgeovatreg": IICVAT_RegTrainer,  # iicgeo with VAT as a regularization

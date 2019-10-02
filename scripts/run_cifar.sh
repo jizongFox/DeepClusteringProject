@@ -17,7 +17,7 @@ transforms=strong
 main_dir="07_15_benchmark/${transforms}"
 vat_eps=10
 iic_vat_name=kl
-max_epoch=1000
+max_epoch=2
 seed=1
 
 
@@ -55,6 +55,6 @@ declare -a StringArray=(
 for cmd in "${StringArray[@]}"
 do
 echo ${cmd}
-wrapper "${time}" "${account}" "${cmd}"
-# ${cmd}
+#wrapper "${time}" "${account}" "${cmd}"
+ ${cmd}
 done

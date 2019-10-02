@@ -3,9 +3,7 @@
 The experimental schedule for WACV revision
 
 <center>Jizong Peng</center>
-
 <center>2019-10-01</center>
-
 ----
 
 -  ##### Adding more regularizations.
@@ -34,12 +32,12 @@ Based on this observation, I plan to add such configurations:
 2. `MI(X,Y)+kl(p(X),p(T(X))), T=Gaussian` 
 3. `MI(X,Y)+kl(p(X),p(T(X))), T=Cutout+Gaussian `
 4. `MI(X,Y)+kl(p(X),p(T(X))), T=Geo+Cutout`
-5. `MI(X,Y)+kl(p(X),p(T(X))), T=Geo+Gaussian`
+5. ~~`MI(X,Y)+kl(p(X),p(T(X))), T=Geo+Gaussian`~~
 6. `MI(X,Y)+kl(p(X),p(T(X))), T=VAT+Cutout `
-7. `MI(X,Y)+kl(p(X),p(T(X))), T=VAT+Gaussian`
+7. ~~`MI(X,Y)+kl(p(X),p(T(X))), T=VAT+Gaussian`~~
 8. `MI(X,Y)+kl(p(X),p(T(X))), T=Mixup+Cutout`
 9. `MI(X,Y)+kl(p(X),p(T(X))), T=VAT+Mixup+Cutout`
-10.  `MI(X,Y)+kl(p(X),p(T(X))), T=Geo+VAT+Mixup+Cutout`
+10.  ~~`MI(X,Y)+kl(p(X),p(T(X))), T=Geo+VAT+Mixup+Cutout`~~
 
 ---
 

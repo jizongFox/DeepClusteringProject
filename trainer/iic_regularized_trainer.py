@@ -255,6 +255,12 @@ class IICGaussian_RegTrainer(IICGeoTrainer, GaussianReg):
         columns.insert(-1, "train_gaussian_mean")
         return columns
 
+    @property
+    def _training_report_dict(self):
+        report_dict = super()._training_report_dict
+        report_dict.update({"train_gaussian": self.METERINTERFACE["train_gaussian"].summary()["mean"]})
+        return report_dict
+
     def _trainer_specific_loss(self, tf1_images: Tensor, tf2_images: Tensor, head_name: str):
         geo_loss = super()._trainer_specific_loss(tf1_images, tf2_images, head_name)
         gaussian_reg = self._gaussian_regularization(self.model, tf1_images, self.model(tf1_images, head_name),
@@ -283,6 +289,12 @@ class IICVATGaussian_RegTrainer(IICVAT_RegTrainer, GaussianReg):
         columns = ["train_gaussian_mean"] + columns
         return columns
 
+    @property
+    def _training_report_dict(self):
+        report_dict = super()._training_report_dict
+        report_dict.update({"train_gaussian": self.METERINTERFACE["train_gaussian"].summary()["mean"]})
+        return report_dict
+
     def _trainer_specific_loss(self, tf1_images: Tensor, tf2_images: Tensor, head_name: str):
         geo_vat_loss = super()._trainer_specific_loss(tf1_images, tf2_images, head_name)
         gaussian_loss = self._gaussian_regularization(self.model, tf1_images, self.model(tf1_images, head_name),
@@ -310,8 +322,8 @@ class IICVATCutout_RegTrainer(IICCutout_RegTrainer, VATReg):
 
     def _trainer_specific_loss(self, tf1_images: Tensor, tf2_images: Tensor, head_name: str):
         geo_cutout_loss = super()._trainer_specific_loss(tf1_images, tf2_images, head_name)
-        vat_loss = self._vat_regularization(self.model, tf1_images, head_name)
-        self.METERINTERFACE["train_vat_mean"].add(vat_loss.item())
+        vat_loss,_,_ = self._vat_regularization(self.model, tf1_images, head_name)
+        self.METERINTERFACE["train_vat"].add(vat_loss.item())
         return geo_cutout_loss + self.reg_weight * vat_loss
 
 

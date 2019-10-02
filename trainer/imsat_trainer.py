@@ -3,7 +3,8 @@ __all__ = ["IMSATAbstractTrainer", "IMSATVATGeoMixupTrainer", "IMSATVATGeoTraine
            "IMSATGeoMixupTrainer", "IMSATVATIICGeoTrainer", "IMSATCutoutGaussianTrainer", "IMSATGeoCutoutTrainer",
            "IMSATGeoGaussianTrainer", "IMSATGeoVATCutoutGaussianTrainer", "IMSATGeoMixupCutoutTrainer",
            "IMSATGeoVATCutoutTrainer", "IMSATGeoVATGaussianTrainer", "IMSATMixupCutoutTrainer",
-           "IMSATMixupGaussianTrainer", "IMSATVATCutoutTrainer", "IMSATVATGaussianTrainer"]
+           "IMSATMixupGaussianTrainer", "IMSATVATCutoutTrainer", "IMSATVATGaussianTrainer",
+           "IMSATVATMixupCutoutTrainer"]
 from typing import List, Union, Dict
 
 import torch
@@ -306,7 +307,7 @@ class IMSATGaussianTrainer(IMSATAbstractTrainer, GaussianReg):
 
     def _regulaze(self, images: Tensor, tf_images: Tensor, img_pred_simplex: List[Tensor],
                   head_name: str = "B") -> Tensor:
-        _reg_loss = self._gaussian_regularization(self.model, images, img_pred_simplex)
+        _reg_loss = self._gaussian_regularization(self.model, images, img_pred_simplex, head_name)
         self.METERINTERFACE["train_gaussian"].add(_reg_loss.item())
         return _reg_loss
 
@@ -331,7 +332,15 @@ class IMSATCutoutTrainer(IMSATAbstractTrainer, CutoutReg):
 
     def _regulaze(self, images: Tensor, tf_images: Tensor, img_pred_simplex: List[Tensor],
                   head_name: str = "B") -> Tensor:
-        _reg_loss = self._cutout_regularization(self.model, images, img_pred_simplex)
+        """
+        Here we do not use head name since
+        :param images:
+        :param tf_images:
+        :param img_pred_simplex:
+        :param head_name:
+        :return:
+        """
+        _reg_loss = self._cutout_regularization(self.model, images, img_pred_simplex, head_name)
         self.METERINTERFACE["train_cutout"].add(_reg_loss.item())
         return _reg_loss
 
@@ -668,7 +677,7 @@ class IMSATGeoCutoutTrainer(IMSATCutoutTrainer, GeoReg):
     def _regulaze(self, images: Tensor, tf_images: Tensor, img_pred_simplex: List[Tensor],
                   head_name: str = "B") -> Tensor:
         cutout_reg = super()._regulaze(images, tf_images, img_pred_simplex, head_name)
-        tf_pred_simplex = self.model(tf_images)
+        tf_pred_simplex = self.model.torchnet(tf_images, head=head_name)
         geo_reg = self._geo_regularization(img_pred_simplex, tf_pred_simplex)
         return cutout_reg + geo_reg
 
@@ -696,12 +705,13 @@ class IMSATVATCutoutTrainer(IMSATVATTrainer, CutoutReg):
     def _training_report_dict(self):
         report_dict = super()._training_report_dict
         report_dict.update({"train_cutout": self.METERINTERFACE["train_cutout"].summary()["mean"]})
-        return filter(report_dict)
+        return dict_filter(report_dict)
 
     def _regulaze(self, images: Tensor, tf_images: Tensor, img_pred_simplex: List[Tensor], head_name="B") -> Tensor:
         vat_reg = super()._regulaze(images, tf_images, img_pred_simplex, head_name)
-        gaussian_reg = self._cutout_regularization(self.model, images, img_pred_simplex)
-        return vat_reg + gaussian_reg
+        cutout_reg = self._cutout_regularization(self.model, images, img_pred_simplex, head_name)
+        self.METERINTERFACE["train_cutout"].add(cutout_reg.item())
+        return vat_reg + cutout_reg
 
 
 # cutout + mixup
@@ -730,6 +740,7 @@ class IMSATMixupCutoutTrainer(IMSATMixupTrainer, CutoutReg):
     def _regulaze(self, images: Tensor, tf_images: Tensor, img_pred_simplex: List[Tensor], head_name="B") -> Tensor:
         mixup_reg = super()._regulaze(images, tf_images, img_pred_simplex, head_name)
         cutout_reg = self._cutout_regularization(self.model, images, img_pred_simplex)
+        self.METERINTERFACE["train_cutout"].add(cutout_reg.item())
         return mixup_reg + cutout_reg
 
 
@@ -754,7 +765,7 @@ class IMSATCutoutGaussianTrainer(IMSATCutoutTrainer, GaussianReg):
     def _regulaze(self, images: Tensor, tf_images: Tensor, img_pred_simplex: List[Tensor],
                   head_name: str = "B") -> Tensor:
         cutout_reg = super()._regulaze(images, tf_images, img_pred_simplex, head_name)
-        gaussian_reg = self._gaussian_regularization(self.model, images, img_pred_simplex)
+        gaussian_reg = self._gaussian_regularization(self.model, images, img_pred_simplex, head_name)
         return cutout_reg + gaussian_reg
 
     @property
@@ -834,3 +845,35 @@ class IMSATGeoVATCutoutGaussianTrainer(IMSATGeoVATCutoutTrainer, GaussianReg):
         geo_vat_cutout_reg = super()._regulaze(images, tf_images, img_pred_simplex, head_name)
         gaussian_reg = self._gaussian_regularization(self.model, images, img_pred_simplex)
         return geo_vat_cutout_reg + gaussian_reg
+
+
+# VAT+mixup+cutout
+
+class IMSATVATMixupCutoutTrainer(IMSATVATMixupTrainer, CutoutReg):
+    def __init__(self, model: Model, train_loader_A: DataLoader, train_loader_B: DataLoader, val_loader: DataLoader,
+                 max_epoch: int = 100, save_dir: str = "IMSATAbstractTrainer", checkpoint_path: str = None,
+                 device="cpu", head_control_params: Dict[str, int] = {"B": 1}, use_sobel: bool = False,
+                 config: dict = None, MI_params: dict = {"mu": 4}, VAT_params={"eps": 10}, Cutout_params={},
+                 **kwargs) -> None:
+        IMSATVATMixupTrainer.__init__(self, model, train_loader_A, train_loader_B, val_loader, max_epoch, save_dir,
+                                      checkpoint_path, device, head_control_params, use_sobel, config, MI_params,
+                                      VAT_params, **kwargs)
+        CutoutReg.__init__(self, **Cutout_params)
+
+    def __init_meters__(self) -> List[Union[str, List[str]]]:
+        columns = super().__init_meters__()
+        self.METERINTERFACE.register_new_meter("train_cutout", AverageValueMeter())
+        columns.insert(-1, "train_cutout_mean")
+        return columns
+
+    @property
+    def _training_report_dict(self):
+        report_dict = super()._training_report_dict
+        report_dict.update({"train_cutout": self.METERINTERFACE["train_cutout"].summary()["mean"]})
+        return dict_filter(report_dict)
+
+    def _regulaze(self, images: Tensor, tf_images: Tensor, img_pred_simplex: List[Tensor], head_name="B") -> Tensor:
+        vat_mixup_reg = super()._regulaze(images, tf_images, img_pred_simplex, head_name)
+        cutout_reg = self._cutout_regularization(self.model, images, img_pred_simplex, head_name)
+        self.METERINTERFACE["train_cutout"].add(cutout_reg.item())
+        return vat_mixup_reg + cutout_reg

@@ -16,7 +16,7 @@ Scheduler:
   gamma: 0.5
 
 DataLoader:
-  batch_size: 100
+  batch_size: 10
   shuffle: true
   num_workers: 16
   transforms: naive
@@ -31,6 +31,7 @@ Trainer:
   use_sobel: false
   VAT_params:
     eps: 2.5
+  reg_weight: 0.001
 
 Seed:
   0
