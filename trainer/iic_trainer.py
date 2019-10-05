@@ -1,5 +1,6 @@
 __all__ = ["IICMixupTrainer", "IICGeoVATMixupTrainer", "IICGeoVATTrainer", "IICGeoTrainer", "IICVATTrainer",
-           "IICGeoMixupTrainer", "IICVatMixupTrainer"]
+           "IICGaussianTrainer", "IICCutoutTrainer", "IICGeoMixupTrainer", "IICVatMixupTrainer",
+           "IICGeoGaussianTrainer", "IICGeoCutoutTrainer"]
 from typing import List, Union, Dict
 
 import torch
@@ -15,7 +16,7 @@ from torch import Tensor
 from torch.nn import functional as F
 from torch.utils.data import DataLoader
 
-from .clustering_trainer import ClusteringGeneralTrainer, VATReg, MixupReg
+from .clustering_trainer import ClusteringGeneralTrainer, VATReg, MixupReg, GaussianReg, CutoutReg
 
 
 # GEO
@@ -207,6 +208,47 @@ class IICMixupTrainer(IICGeoTrainer, MixupReg):
         return batch_loss
 
 
+# Gaussian Noise
+# todo: check this trainer
+class IICGaussianTrainer(IICGeoTrainer, GaussianReg):
+
+    def __init__(self, model: Model, train_loader_A: DataLoader, train_loader_B: DataLoader, val_loader: DataLoader,
+                 max_epoch: int = 100, save_dir: str = "IICTrainer", checkpoint_path: str = None, device="cpu",
+                 head_control_params: Dict[str, int] = {"B": 1}, use_sobel: bool = False, config: dict = None,
+                 Gaussian_params: dict = {"gaussian_std": 0.1}, **kwargs) -> None:
+        IICGeoTrainer.__init__(self, model, train_loader_A, train_loader_B, val_loader, max_epoch, save_dir,
+                               checkpoint_path, device, head_control_params, use_sobel, config, **kwargs)
+        GaussianReg.__init__(self, **Gaussian_params)
+
+    def _trainer_specific_loss(self, tf1_images: Tensor, tf2_images: Tensor, head_name: str):
+        # override tf2_images with gaussian-noise enhanced images
+        tf2_images = self.gaussian_adder(tf1_images)
+        assert tf2_images.shape == tf1_images.shape
+        batch_loss = super()._trainer_specific_loss(tf1_images, tf2_images, head_name)
+        return batch_loss
+
+
+# todo: check cutout
+class IICCutoutTrainer(IICGeoTrainer, CutoutReg):
+
+    def __init__(self, model: Model, train_loader_A: DataLoader, train_loader_B: DataLoader, val_loader: DataLoader,
+                 max_epoch: int = 100, save_dir: str = "IICTrainer", checkpoint_path: str = None, device="cpu",
+                 head_control_params: Dict[str, int] = {"B": 1}, use_sobel: bool = False, config: dict = None,
+                 Cutout_params: dict = {}, **kwargs) -> None:
+        IICGeoTrainer.__init__(self, model, train_loader_A, train_loader_B, val_loader, max_epoch, save_dir,
+                               checkpoint_path, device, head_control_params, use_sobel, config, **kwargs)
+        CutoutReg.__init__(self, **Cutout_params)
+
+    def _trainer_specific_loss(self, tf1_images: Tensor, tf2_images: Tensor, head_name: str):
+        # override tf2_images with gaussian-noise enhanced images
+        tf2_images = self.tensorcutout(tf1_images)
+        assert tf2_images.shape == tf1_images.shape
+        batch_loss = super()._trainer_specific_loss(tf1_images, tf2_images, head_name)
+        return batch_loss
+
+
+# highlight: we have now GEO, VAT, MIXUP, GAUSSIAN, AND CUTOUT, 5 types of transformations
+
 # GEO+VAT
 class IICGeoVATTrainer(IICVATTrainer):
     """
@@ -276,3 +318,19 @@ class IICGeoVATMixupTrainer(IICVatMixupTrainer):
         vat_mixup_loss = super()._trainer_specific_loss(tf1_images, tf2_images, head_name)
         geo_loss = IICGeoTrainer._trainer_specific_loss(self, tf1_images, tf2_images, head_name)
         return vat_mixup_loss + geo_loss
+
+
+# GEO + Cutout
+class IICGeoCutoutTrainer(IICCutoutTrainer):
+    def _trainer_specific_loss(self, tf1_images: Tensor, tf2_images: Tensor, head_name: str):
+        cutout_loss = super()._trainer_specific_loss(tf1_images, tf2_images, head_name)
+        geo_loss = IICGeoTrainer._trainer_specific_loss(self, tf1_images, tf2_images, head_name)
+        return cutout_loss + geo_loss
+
+
+# GEO + Gaussian
+class IICGeoGaussianTrainer(IICGaussianTrainer):
+    def _trainer_specific_loss(self, tf1_images: Tensor, tf2_images: Tensor, head_name: str):
+        gaussian_loss = super()._trainer_specific_loss(tf1_images, tf2_images, head_name)
+        geo_loss = IICGeoTrainer._trainer_specific_loss(self, tf1_images, tf2_images, head_name)
+        return gaussian_loss + geo_loss

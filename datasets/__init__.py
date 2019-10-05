@@ -2,6 +2,8 @@
 
 from .cifar_helper import (
     Cifar10ClusteringDatasetInterface,
+    Cifar20ClusteringDatasetInterface,
+    Cifar100ClusteringDatasetInterface,
     cifar10_naive_transform,
     cifar10_strong_transform
 )

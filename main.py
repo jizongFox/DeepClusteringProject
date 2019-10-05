@@ -8,38 +8,10 @@ from deepclustering.utils import fix_all_seed
 from torch.utils.data import DataLoader
 
 import trainer
+from trainer import trainer_mapping
 
 DATA_PATH = Path(".data")
 DATA_PATH.mkdir(exist_ok=True)
-
-trainer_mapping: Dict[str, Type[trainer.ClusteringGeneralTrainer]] = {
-    # using different transforms for iic
-    # todo: add cutout or gaussian if it is necessary
-    "iicgeo": trainer.IICGeoTrainer,  # the basic iic
-    "iicmixup": trainer.IICMixupTrainer,  # the basic IIC with mixup as the data augmentation
-    "iicvat": trainer.IICVATTrainer,  # the basic iic with VAT as the basic data augmentation
-    "iicgeovat": trainer.IICGeoVATTrainer,  # IIC with geo and vat as the data augmentation
-    "iicgeomixup": trainer.IICGeoMixupTrainer,  # IIC with geo and mixup as the data augmentation
-    "iicgeovatmixup": trainer.IICGeoVATMixupTrainer,  # IIC with geo, vat and mixup as the data augmentation
-    # using different regularization for iic
-    "iicgeovatreg": trainer.IICVAT_RegTrainer,  # iicgeo with VAT as a regularization
-    "iicgeomixupreg": trainer.IICMixup_RegTrainer,  # iicgeo with mixup as a regularization
-    "iicgeovatmixupreg": trainer.IICVATMixup_RegTrainer,  # iicgeo with VAT and mixup as a regularization
-    "iicgeovatvatreg": trainer.IICVATVAT_RegTrainer,  # iicgeo with VAT and VAT as regularization
-    "iicvatmivatklreg": trainer.IICVATMI_VATKL,  # special case of IIC with regularization,
-    # using VAT_mi for IIC and VAT_kl for Regularization
-
-    # using different regularization for imsat
-    "imsat": trainer.IMSATAbstractTrainer,  # imsat without any regularization
-    "imsatvat": trainer.IMSATVATTrainer,  # imsat with vat
-    "imsatgeo": trainer.IMSATGeoTrainer,
-    "imsatmixup": trainer.IMSATMixupTrainer,  # imsat with mixup
-    "imsatvatmixup": trainer.IMSATVATMixupTrainer,  # imsat with vat + mixup
-    "imsatvatgeo": trainer.IMSATVATGeoTrainer,  # imsat with geo+vat
-    "imsatgeomixup": trainer.IMSATGeoMixup,
-    "imsatvatgeomixup": trainer.IMSATVATGeoMixupTrainer,  # imsat with geo vat and mixup
-    "imsatvatiicgeo": trainer.IMSATVATIICGeo  # using IMSATVAT with IIC regularization
-}
 
 
 def get_trainer(config: Dict[str, Union[float, int, dict]]) -> Type[trainer.ClusteringGeneralTrainer]:
@@ -64,6 +36,29 @@ def get_dataloader(config: Dict[str, Union[float, int, dict, str]], DEFAULT_CONF
         train_split_partition = ["train", "val"]
         val_split_partition = ["train", "val"]
         dataset_name = "cifar"
+
+    elif config.get("Config", DEFAULT_CONFIG).split("_")[-1].lower() == "cifar20.yaml":
+        from datasets import (
+            cifar10_naive_transform as naive_transforms,
+            cifar10_strong_transform as strong_transforms,
+            Cifar20ClusteringDatasetInterface as DatasetInterface,
+        )
+        print("Checkout CIFAR20 dataset with transforms:")
+        train_split_partition = ["train", "val"]
+        val_split_partition = ["train", "val"]
+        dataset_name = "cifar20"
+
+    elif config.get("Config", DEFAULT_CONFIG).split("_")[-1].lower() == "cifar100.yaml":
+        from datasets import (
+            cifar10_naive_transform as naive_transforms,
+            cifar10_strong_transform as strong_transforms,
+            Cifar100ClusteringDatasetInterface as DatasetInterface,
+        )
+        print("Checkout CIFAR100 dataset with transforms:")
+        train_split_partition = ["train", "val"]
+        val_split_partition = ["train", "val"]
+        dataset_name = "cifar100"
+
     elif config.get("Config", DEFAULT_CONFIG).split("_")[-1].lower() == "mnist.yaml":
         from datasets import (
             mnist_naive_transform as naive_transforms,
@@ -74,6 +69,7 @@ def get_dataloader(config: Dict[str, Union[float, int, dict, str]], DEFAULT_CONF
         train_split_partition = ["train", "val"]
         val_split_partition = ["train", "val"]
         dataset_name = "mnist"
+
     elif config.get("Config", DEFAULT_CONFIG).split("_")[-1].lower() == "stl10.yaml":
         from datasets import (
             stl10_strong_transform as strong_transforms,
@@ -84,6 +80,7 @@ def get_dataloader(config: Dict[str, Union[float, int, dict, str]], DEFAULT_CONF
         val_split_partition = ["train", "test"]
         print("Checkout STL-10 dataset with transforms:")
         dataset_name = "stl10"
+
     elif config.get("Config", DEFAULT_CONFIG).split("_")[-1].lower() == "svhn.yaml":
         from datasets import (
             svhn_naive_transform as naive_transforms,
@@ -94,6 +91,7 @@ def get_dataloader(config: Dict[str, Union[float, int, dict, str]], DEFAULT_CONF
         train_split_partition = ["train", "test"]
         val_split_partition = ["train", "test"]
         dataset_name = "svhn"
+
     else:
         raise NotImplementedError(
             config.get("Config", DEFAULT_CONFIG).split("_")[-1].lower()
@@ -106,8 +104,8 @@ def get_dataloader(config: Dict[str, Union[float, int, dict, str]], DEFAULT_CONF
     # todo: to determinate if we should include cutout or gaussian as the transformation.
     img_transforms = {"naive": naive_transforms, "strong": strong_transforms}.get(transforms)
     assert img_transforms
-    print("image transformations:")
-    pprint(img_transforms)
+    # print("image transformations:")
+    # pprint(img_transforms)
 
     train_loader_A = DatasetInterface(
         data_root=DATA_PATH,
@@ -149,7 +147,7 @@ def get_dataloader(config: Dict[str, Union[float, int, dict, str]], DEFAULT_CONF
 
 if __name__ == '__main__':
     DEFAULT_CONFIG = "config/config_MNIST.yaml"
-    merged_config = ConfigManger(DEFAULT_CONFIG_PATH=DEFAULT_CONFIG, verbose=True, integrality_check=True).config
+    merged_config = ConfigManger(DEFAULT_CONFIG_PATH=DEFAULT_CONFIG, verbose=False, integrality_check=True).config
 
     # for reproducibility
     fix_all_seed(merged_config.get("Seed", 0))

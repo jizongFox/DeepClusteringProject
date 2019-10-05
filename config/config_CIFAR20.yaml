@@ -2,7 +2,7 @@ Arch:
   name: clusternet5gTwoHead
   num_channel: 1
   output_k_A: 70
-  output_k_B: 10
+  output_k_B: 20
   num_sub_heads: 1
   semisup: False
 
