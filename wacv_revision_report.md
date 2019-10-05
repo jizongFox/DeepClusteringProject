@@ -6,7 +6,7 @@ The experimental schedule for WACV revision
 <center>2019-10-01</center>
 ----
 
--  ##### Adding more regularizations.
+- [x] ##### Adding more regularizations.
 
 
 We have tested on `Geo`, `VAT`, `Mixup` and their combinations. However, we want to add `cutout` and `gaussian` as extra regularization. Therefore, we cannot carry out a grid search on that.
@@ -70,15 +70,36 @@ For all 3 datasets, we have 22 experiments for each and 66 for total. If we cons
 
 ---
 
--  ##### Adding cifar100-20 dataset
+- [x] ##### Adding `cifar100-20` dataset
 
-I am planning to add cifar100 or cifar100-20 dataset. The computational resources are limited as adding such leading to more than 100 experiments each costing more than 3 days maybe.
+The experiments targeted to `CIFAR20` has been evaluated with only one random seed.
 
 ---
 
+- [x] ##### Picking up best configurations and reevaluating them.
+
+We picked up some of the configurations that worked best, and reevaluate them with one head one subhead & 5 head & 2 subhead setting.
+
+
+
+The picked experiments are:
+
+1. `MI(X,T(X)), T = Geo`,  **the original IIC paper,**
+2. `MI(X,T(X)), T = Geo + Mixup`
+3. `MI(X,T(X)), T = Geo + Gaussian`
+4. `MI(X,Geo(X))+kl(p(X)|p(T(X)), T = Mixup`
+5. `MI(X,Geo(X))+kl(p(X)|p(T(X)), T = VAT`
+6. `MI(X,Geo(X))+kl(p(X)|p(T(X)), T = Cutout`
+7. `MI(X,Geo(X))+kl(p(X)|p(T(X), T = Gaussian`
+8. `MI(X,Geo(X))+kl(p(X)|p(T(X)), T = VAT + Cutout`
+9. `MI(X,Geo(X))+kl(p(X)|p(T(X)), T = VAT + Gaussian`
+10. `MI(X,Y)+kl(p(X),p(T(X))), T = VAT`, **the original IMSAT paper**
+11. `MI(X,Y)+kl(p(X),p(T(X))), T = VAT + Mixup `
+12. `MI(X,Y)+kl(p(X),p(T(X))), T = VAT + Mixup + Mixup `
+13. ``MI(X,Geo(X))+MI(X,Y)+kl(p(X),p(T(X))), T = VAT`, **the mixup of IIC and IMSAT**
+
 #### Todo:
 
-1. To verify the code for the 22 configuration is correct. hard to say. I have added  more can 3k lines. 
-2. To remove some cases little important based on professor's comments
-3. To make sure that cifar100 code works properly.
+1. To verify the code for the 13 configurations are stable.
+2. Make sure that ``cifar100-20`` dataset works fine
 
