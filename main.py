@@ -104,8 +104,8 @@ def get_dataloader(config: Dict[str, Union[float, int, dict, str]], DEFAULT_CONF
     # todo: to determinate if we should include cutout or gaussian as the transformation.
     img_transforms = {"naive": naive_transforms, "strong": strong_transforms}.get(transforms)
     assert img_transforms
-    print("image transformations:")
-    pprint(img_transforms)
+    # print("image transformations:")
+    # pprint(img_transforms)
 
     train_loader_A = DatasetInterface(
         data_root=DATA_PATH,
@@ -147,7 +147,7 @@ def get_dataloader(config: Dict[str, Union[float, int, dict, str]], DEFAULT_CONF
 
 if __name__ == '__main__':
     DEFAULT_CONFIG = "config/config_MNIST.yaml"
-    merged_config = ConfigManger(DEFAULT_CONFIG_PATH=DEFAULT_CONFIG, verbose=True, integrality_check=True).config
+    merged_config = ConfigManger(DEFAULT_CONFIG_PATH=DEFAULT_CONFIG, verbose=False, integrality_check=True).config
 
     # for reproducibility
     fix_all_seed(merged_config.get("Seed", 0))

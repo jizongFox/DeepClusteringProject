@@ -98,6 +98,6 @@ ${load_checkpoint}Trainer.checkpoint_path=runs/${main_dir}/${DATASET}_${seed}/ii
 for cmd in "${StringArray[@]}"
 do
 echo ${cmd}
-#wrapper "${time}" "${account}" "${cmd}"
- ${cmd}
+wrapper "${time}" "${account}" "${cmd}"
+# ${cmd}
 done

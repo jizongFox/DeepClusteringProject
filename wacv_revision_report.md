@@ -87,16 +87,17 @@ The picked experiments are:
 1. `MI(X,T(X)), T = Geo`,  **the original IIC paper,**
 2. `MI(X,T(X)), T = Geo + Mixup`
 3. `MI(X,T(X)), T = Geo + Gaussian`
-4. `MI(X,Geo(X))+kl(p(X)|p(T(X)), T = Mixup`
+4. `MI(X,T(X)), T = Geo + Cutout`
 5. `MI(X,Geo(X))+kl(p(X)|p(T(X)), T = VAT`
-6. `MI(X,Geo(X))+kl(p(X)|p(T(X)), T = Cutout`
-7. `MI(X,Geo(X))+kl(p(X)|p(T(X), T = Gaussian`
-8. `MI(X,Geo(X))+kl(p(X)|p(T(X)), T = VAT + Cutout`
-9. `MI(X,Geo(X))+kl(p(X)|p(T(X)), T = VAT + Gaussian`
-10. `MI(X,Y)+kl(p(X),p(T(X))), T = VAT`, **the original IMSAT paper**
-11. `MI(X,Y)+kl(p(X),p(T(X))), T = VAT + Mixup `
-12. `MI(X,Y)+kl(p(X),p(T(X))), T = VAT + Mixup + Mixup `
-13. ``MI(X,Geo(X))+MI(X,Y)+kl(p(X),p(T(X))), T = VAT`, **the mixup of IIC and IMSAT**
+6. `MI(X,Geo(X))+kl(p(X)|p(T(X)), T = Mixup`
+7. `MI(X,Geo(X))+kl(p(X)|p(T(X)), T = Cutout`
+8. `MI(X,Geo(X))+kl(p(X)|p(T(X), T = Gaussian`
+9. `MI(X,Geo(X))+kl(p(X)|p(T(X)), T = VAT + Cutout`
+10. `MI(X,Geo(X))+kl(p(X)|p(T(X)), T = VAT + Gaussian`
+11. `MI(X,Y)+kl(p(X),p(T(X))), T = VAT`, **the original IMSAT paper**
+12. `MI(X,Y)+kl(p(X),p(T(X))), T = VAT + Mixup `
+13. `MI(X,Y)+kl(p(X),p(T(X))), T = VAT + Mixup + Cutout`
+14. ``MI(X,Geo(X))+MI(X,Y)+kl(p(X),p(T(X))), T = VAT`, **the mixup of IIC and IMSAT**
 
 #### Todo:
 

@@ -232,7 +232,7 @@ class IICCutout_RegTrainer(IICGeoTrainer, CutoutReg):
 
     def _trainer_specific_loss(self, tf1_images: Tensor, tf2_images: Tensor, head_name: str):
         geo_loss = super()._trainer_specific_loss(tf1_images, tf2_images, head_name)
-        cutout_loss = self._cutout_regularization(self.model, tf1_images, self.model(tf1_images), head_name)
+        cutout_loss = self._cutout_regularization(self.model, tf1_images, self.model(tf1_images,head=head_name), head_name)
         self.METERINTERFACE["train_cutout"].add(cutout_loss.item())
         return geo_loss + cutout_loss * self.reg_weight
 
