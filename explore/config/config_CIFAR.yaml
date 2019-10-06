@@ -1,0 +1,37 @@
+Arch:
+  name: clusternet5gTwoHead_sn
+  num_channel: 1
+  output_k_A: 70
+  output_k_B: 10
+  num_sub_heads: 1
+  semisup: False
+
+Optim:
+  name: Adam
+  lr: 0.002
+
+Scheduler:
+  name: MultiStepLR
+  milestones: [100, 200, 300, 400, 500, 600, 700, 800, 900]
+  gamma: 0.75
+
+DataLoader:
+  batch_size: 100
+  shuffle: true
+  num_workers: 16
+  transforms: naive
+
+Trainer:
+  max_epoch: 2
+  save_dir: multihead_cifar
+  device: cuda:0
+  head_control_params:
+    A: 0
+    B: 1
+  use_sobel: false
+  VAT_params:
+    eps: 2.5
+  reg_weight: 0.001
+
+Seed:
+  0
