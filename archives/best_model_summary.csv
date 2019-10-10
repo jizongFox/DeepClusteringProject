@@ -1,0 +1,12 @@
+,feature_0,feature_1,val_best_acc_mean
+CIFAR_1/iicgeogaussianreg/wholeMeter.csv,CIFAR_1,iicgeogaussianreg,0.427833349
+CIFAR_1/iicgeovatgaussianreg/wholeMeter.csv,CIFAR_1,iicgeovatgaussianreg,0.390633345
+CIFAR_1/iicgeovatcutoutreg/wholeMeter.csv,CIFAR_1,iicgeovatcutoutreg,0.400316685
+CIFAR_1/iicgeocutoutreg/wholeMeter.csv,CIFAR_1,iicgeocutoutreg,0.420933336
+CIFAR_1/iicgeovatreg_kl/wholeMeter.csv,CIFAR_1,iicgeovatreg_kl,0.383316666
+SVHN_1/iicgeogaussianreg/wholeMeter.csv,SVHN_1,iicgeogaussianreg,0.451419592
+SVHN_1/iicgeovatgaussianreg/wholeMeter.csv,SVHN_1,iicgeovatgaussianreg,0.397586823
+SVHN_1/iicgeovatcutoutreg/wholeMeter.csv,SVHN_1,iicgeovatcutoutreg,0.418837935
+SVHN_1/iicgeocutoutreg/wholeMeter.csv,SVHN_1,iicgeocutoutreg,0.446595281
+SVHN_1/iicgeomixupreg/wholeMeter.csv,SVHN_1,iicgeomixupreg,0.481382608
+SVHN_1/iicgeovatreg_kl/wholeMeter.csv,SVHN_1,iicgeovatreg_kl,0.389791399
