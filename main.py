@@ -1,5 +1,4 @@
 from pathlib import Path
-from pprint import pprint
 from typing import Dict, Union, Type, Tuple
 
 from deepclustering.manager import ConfigManger

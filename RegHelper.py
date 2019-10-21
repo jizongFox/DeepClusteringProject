@@ -39,7 +39,7 @@ def _l2_normalize(d: torch.Tensor) -> torch.Tensor:
 
 class VATLoss(nn.Module):
     def __init__(
-            self, xi=10.0, eps=1.0, prop_eps=0.25, ip=1, distance_func=KL_div(reduce=True)
+            self, xi=10.0, eps=1.0, prop_eps=0.25, ip=1, distance_func=KL_div()
     ):
         """VAT loss
         :param xi: hyperparameter of VAT (default: 10.0)
@@ -102,7 +102,7 @@ class VATLoss_Multihead(nn.Module):
     """
 
     def __init__(
-            self, xi=10.0, eps=1.0, prop_eps=0.25, ip=1, distance_func=KL_div(reduce=True)
+            self, xi=10.0, eps=1.0, prop_eps=0.25, ip=1, distance_func=KL_div()
     ):
         """VAT loss
         :param xi: hyperparameter of VAT (default: 10.0)
