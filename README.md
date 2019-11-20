@@ -28,7 +28,7 @@ The `main.py` is the main entrance of the program and the `trainer/*` defines th
 
 
 ___
-###### To reproduce the performance of the paper `Invariant Information Clustering for Unsupervised Image Classification and Segmentation`, go to [here](https://github.com/jizongFox/DeepClusteringProject/blob/master/baseline/run_baseline.sh)
+###### To reproduce the performance of the paper `Invariant Information Clustering for Unsupervised Image Classification and Segmentation`, go to [here](https://github.com/jizongFox/DeepClusteringProject/blob/master/baseline/run_baseline.sh). You should get near 60.0% accuracy for `cifar-10` dataset and 92.0%-99.5% accuracy for `mnist` dataset (depending on initialization)
 
 
 ___
