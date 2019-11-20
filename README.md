@@ -26,5 +26,10 @@ for a faster training.
 
 The `main.py` is the main entrance of the program and the `trainer/*` defines the training behaviors. 
 
+
+___
 ###### To reproduce the performance of the paper `Invariant Information Clustering for Unsupervised Image Classification and Segmentation`, go to [here](https://github.com/jizongFox/DeepClusteringProject/blob/master/baseline/run_baseline.sh)
-###### To reproduce the performance of the paper `Learning Discrete Representations via Information Maximizing Self-Augmented Training`, go to [here](Learning Discrete Representations via Information Maximizing Self-Augmented Training)
+
+
+___
+###### To reproduce the performance of the paper `Learning Discrete Representations via Information Maximizing Self-Augmented Training`, go to [here](https://github.com/jizongFox/DeepClusteringProject/blob/master/baseline/run_baseline.sh)
