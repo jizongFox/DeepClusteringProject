@@ -4,7 +4,6 @@ __all__ = ["IICMixupTrainer", "IICGeoVATMixupTrainer", "IICGeoVATTrainer", "IICG
 from typing import List, Union, Dict
 
 import torch
-from deepclustering.loss.IID_losses import IIDLoss
 from deepclustering.meters import AverageValueMeter
 from deepclustering.model import Model
 from deepclustering.utils import (
@@ -17,6 +16,7 @@ from torch.nn import functional as F
 from torch.utils.data import DataLoader
 
 from .clustering_trainer import ClusteringGeneralTrainer, VATReg, MixupReg, GaussianReg, CutoutReg
+from .loss import IIDLoss, CustomizedIICLoss
 
 
 # GEO
@@ -50,7 +50,7 @@ class IICGeoTrainer(ClusteringGeneralTrainer):
             train_loader_A,
             train_loader_B,
             val_loader,
-            IIDLoss(),
+            CustomizedIICLoss(),
             max_epoch,
             save_dir,
             checkpoint_path,
