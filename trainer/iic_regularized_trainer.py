@@ -1,4 +1,6 @@
-__all__ = ["IICMixup_RegTrainer", "IICGeoTrainer", "IICVATMixup_RegTrainer", "IICVAT_RegTrainer",
+import torch
+
+__all__ = ["IICGeo_RegTrainer", "IICMixup_RegTrainer", "IICVATMixup_RegTrainer", "IICVAT_RegTrainer",
            "IICVATVAT_RegTrainer", "IICVATMI_VATKLTrainer", "IICCutout_RegTrainer", "IICGaussian_RegTrainer",
            "IICMixupCutout_RegTrainer", "IICMixupCutoutGaussian_RegTrainer", "IICMixupGaussian_RegTrainer",
            "IICVATCutout_RegTrainer", "IICVATCutoutGaussian_RegTrainer", "IICVATGaussian_RegTrainer",
@@ -8,11 +10,56 @@ from typing import Union, Dict, List
 
 from deepclustering.meters import AverageValueMeter
 from deepclustering.model import Model
+from deepclustering.decorator import lazy_load_checkpoint
 from torch import Tensor
 from torch.utils.data import DataLoader
 
-from .clustering_trainer import VATReg, MixupReg, CutoutReg, GaussianReg
+from .clustering_trainer import VATReg, MixupReg, CutoutReg, GaussianReg, GeoReg
 from .iic_trainer import IICGeoTrainer
+
+
+# geo
+class IICGeo_RegTrainer(IICGeoTrainer, GeoReg):
+    @lazy_load_checkpoint
+    def __init__(self, model: Model, train_loader_A: DataLoader, train_loader_B: DataLoader, val_loader: DataLoader,
+                 max_epoch: int = 100, save_dir: str = "IICTrainer",
+                 checkpoint_path: str = None, device="cpu", head_control_params: Dict[str, int] = {"B": 1},
+                 use_sobel: bool = False, config: dict = None, reg_weight: float = 0.05,
+                 **kwargs, ) -> None:
+        IICGeoTrainer.__init__(self, model, train_loader_A, train_loader_B, val_loader, max_epoch, save_dir,
+                               checkpoint_path, device, head_control_params, use_sobel, config, **kwargs, )
+        GeoReg.__init__(self)
+        self.reg_weight = reg_weight
+        print(f"reg_weight={reg_weight}")
+
+    def __init_meters__(self) -> List[Union[str, List[str]]]:
+        columns = super().__init_meters__()
+        self.METERINTERFACE.register_new_meter("geo_reg", AverageValueMeter())
+        columns = ["geo_reg_mean"] + columns
+        return columns
+
+    @property
+    def _training_report_dict(self):
+        report_dict = super()._training_report_dict
+        report_dict.update({
+            "geo_reg": self.METERINTERFACE["geo_reg"].summary()["mean"]
+        })
+        return report_dict
+
+    def _trainer_specific_loss(
+            self, tf1_images: Tensor, tf2_images: Tensor, head_name: str
+    ):
+        # original_loss
+        geo_loss = super()._trainer_specific_loss(tf1_images, tf2_images, head_name)
+        # vat regularization
+        reg_loss = torch.tensor(0.0)
+        if head_name == "B":
+            tf1_pred_simplex = self.model.torchnet(tf1_images, head=head_name)
+            tf2_pred_simplex = self.model.torchnet(tf2_images, head=head_name)
+
+            reg_loss = self._geo_regularization(tf1_pred_simplex, tf2_pred_simplex)
+        self.METERINTERFACE["train_adv"].add(reg_loss.item())
+        return geo_loss + self.reg_weight * reg_loss
 
 
 # VAT
@@ -232,7 +279,8 @@ class IICCutout_RegTrainer(IICGeoTrainer, CutoutReg):
 
     def _trainer_specific_loss(self, tf1_images: Tensor, tf2_images: Tensor, head_name: str):
         geo_loss = super()._trainer_specific_loss(tf1_images, tf2_images, head_name)
-        cutout_loss = self._cutout_regularization(self.model, tf1_images, self.model(tf1_images,head=head_name), head_name)
+        cutout_loss = self._cutout_regularization(self.model, tf1_images, self.model(tf1_images, head=head_name),
+                                                  head_name)
         self.METERINTERFACE["train_cutout"].add(cutout_loss.item())
         return geo_loss + cutout_loss * self.reg_weight
 
@@ -322,7 +370,7 @@ class IICVATCutout_RegTrainer(IICCutout_RegTrainer, VATReg):
 
     def _trainer_specific_loss(self, tf1_images: Tensor, tf2_images: Tensor, head_name: str):
         geo_cutout_loss = super()._trainer_specific_loss(tf1_images, tf2_images, head_name)
-        vat_loss,_,_ = self._vat_regularization(self.model, tf1_images, head_name)
+        vat_loss, _, _ = self._vat_regularization(self.model, tf1_images, head_name)
         self.METERINTERFACE["train_vat"].add(vat_loss.item())
         return geo_cutout_loss + self.reg_weight * vat_loss
 

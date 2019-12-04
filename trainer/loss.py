@@ -19,6 +19,7 @@ class IIDLoss(nn.Module):
         super().__init__()
         self.lamb = float(lamb)
         self.eps = float(eps)
+        self.torch_vision = torch.__version__
 
     def forward(self, x_out: Tensor, x_tf_out: Tensor):
         """
@@ -40,11 +41,12 @@ class IIDLoss(nn.Module):
 
         # p_i = x_out.mean(0).view(k, 1).expand(k, k)
         # p_j = x_tf_out.mean(0).view(1, k).expand(k, k)
-
+        #
         # avoid NaN losses. Effect will get cancelled out by p_i_j tiny anyway
-        p_i_j[p_i_j < self.eps] = self.eps
-        p_j[p_j < self.eps] = self.eps
-        p_i[p_i < self.eps] = self.eps
+        if self.torch_vision < "1.3.0":
+            p_i_j[p_i_j < self.eps] = self.eps
+            p_j[p_j < self.eps] = self.eps
+            p_i[p_i < self.eps] = self.eps
 
         loss = -p_i_j * (
                 torch.log(p_i_j) - self.lamb * torch.log(p_j) - self.lamb * torch.log(p_i)
@@ -69,14 +71,38 @@ class CustomizedIICLoss(nn.Module):
         assert simplex(x_out1) and simplex(x_out2)
         joint_distr = self.compute_joint(x_out1, x_out2)
         marginal = self.entropy(joint_distr.sum(0).unsqueeze(0)) + self.entropy(joint_distr.sum(1).unsqueeze(0))
-        centropy = (joint_distr * (joint_distr + self.entropy._eps).log()).sum()
+        centropy = -(joint_distr * (joint_distr + self.entropy._eps).log()).sum()
 
-        mi = self.lamda * marginal + centropy
+        mi = self.lamda * marginal - centropy
         # print(marginal.data, centropy.data)
 
         return mi * -1.0, mi * -1.0
 
-    def __clip_coefficient(self, weight, range=[-1, 1]):
+
+class CustomizedIICLossDual(nn.Module):
+    def __init__(
+            self, error=5e-2, c_range=[-0.8, 1]) -> None:
+        super().__init__()
+        self.error = error
+        self.c_range = c_range
+        self.c_coef = 1
+        self.entropy = Entropy()
+
+    def forward(self, x_out1: Tensor, x_out2: Tensor):
+        assert simplex(x_out1) and simplex(x_out2)
+        joint_distr = compute_joint(x_out1, x_out2)
+        marginal = self.entropy(joint_distr.sum(0).unsqueeze(0)) + self.entropy(joint_distr.sum(1).unsqueeze(0))
+        centropy = -(joint_distr * (joint_distr + self.entropy._eps).log()).sum()
+        mi = marginal - self.c_coef * centropy
+        self._update_weights(x_out1)
+        return mi * -1.0, mi * -1.0
+
+    def _update_weights(self, x_out):
+        ent = self.entropy(x_out)
+        self.c_coef += abs(ent.item()) - self.error
+        self.c_coef = self._clipping_range(self.c_coef, self.c_range)
+
+    def _clipping_range(self, weight, range=[-1, 1]):
         if weight <= range[0]:
             return range[0]
         elif weight >= range[1]:
@@ -114,12 +140,15 @@ if __name__ == '__main__':
     logit2 = torch.randn(1000, 3, requires_grad=True)
 
     optim = torch.optim.Adam((logit1, logit2))
+    # criterion = CustomizedIICLossDual()
+    # criterion = CustomizedIICLoss()
+    criterion = IIDLoss()
 
     for i in range(1000000000):
         optim.zero_grad()
         p1 = torch.softmax(logit1, 1)
         p2 = torch.softmax(logit2, 1)
-        loss2, _ = CustomizedIICLoss()(p1, p2)
+        loss2, _ = criterion(p1, p2)
         loss2.backward()
         optim.step()
         if i % 100 == 0:

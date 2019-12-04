@@ -143,5 +143,10 @@ if __name__ == '__main__':
         config=merged_config,
         **merged_config["Trainer"]
     )
+    if merged_config["Trainer"].get("use_dual_loss"):
+        from termcolor import colored
+        print(colored("using CustomizedIICLossDual","green"))
+        from trainer.loss import CustomizedIICLossDual
+        clusteringTrainer.criterion=CustomizedIICLossDual()
     clusteringTrainer.start_training()
     clusteringTrainer.clean_up(wait_time=3)
