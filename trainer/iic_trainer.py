@@ -16,7 +16,7 @@ from torch.nn import functional as F
 from torch.utils.data import DataLoader
 
 from .clustering_trainer import ClusteringGeneralTrainer, VATReg, MixupReg, GaussianReg, CutoutReg
-from .loss import IIDLoss, CustomizedIICLoss
+from .loss import IIDLoss
 
 
 # GEO
@@ -50,7 +50,7 @@ class IICGeoTrainer(ClusteringGeneralTrainer):
             train_loader_A,
             train_loader_B,
             val_loader,
-            CustomizedIICLoss(),
+            IIDLoss(),
             max_epoch,
             save_dir,
             checkpoint_path,
